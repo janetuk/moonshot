@@ -1,0 +1,3 @@
+[submodule "mod_auth_kerb"]
+	path = mod_auth_kerb
+	url = ../mod_auth_kerb.git
