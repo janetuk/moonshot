@@ -1,3 +1,6 @@
 [submodule "mod_auth_kerb"]
 	path = mod_auth_kerb
 	url = ../mod_auth_kerb.git
+[submodule "radsecproxy"]
+	path = radsecproxy
+	url = git://git.nordu.net/radsecproxy.git
