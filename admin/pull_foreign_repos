@@ -5,3 +5,7 @@ module_root=/home/hartmans/source
   test -d .git
   test -d mod_auth_kerb/.git
 git cvsimport -d :pserver:anonymous@modauthkerb.cvs.sourceforge.net:/cvsroot/modauthkerb -k -i -u -C $module_root/mod_auth_kerb.cvs  mod_auth_kerb
+cd $module_root/shibboleth
+for rep in *.git; do
+    (cd $rep&&git svn fetch)
+    done
