@@ -4,3 +4,15 @@
 [submodule "radsecproxy"]
 	path = radsecproxy
 	url = git://git.nordu.net/radsecproxy.git
+[submodule "shibboleth/xmltooling.git"]
+	path = shibboleth/xmltooling
+	url = ../shibboleth/xmltooling.git
+[submodule "shibboleth/opensaml2"]
+	path = shibboleth/opensaml2
+	url = ../shibboleth/opensaml2.git
+[submodule "shibboleth/sp"]
+	path = shibboleth/sp
+	url = ../shibboleth/sp.git
+[submodule "shibboleth/xmltooling"]
+	path = shibboleth/xmltooling
+	url = ../shibboleth/xmltooling.git
