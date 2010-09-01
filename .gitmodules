@@ -2,7 +2,7 @@
 	path = mod_auth_kerb
 	url = ../mod_auth_kerb.git
 [submodule "radsecproxy"]
-	path = radsecproxy
+	path = libradsec
 	url = git://git.nordu.net/radsecproxy.git
 [submodule "shibboleth/opensaml2"]
 	path = shibboleth/opensaml2
