@@ -16,3 +16,9 @@
 [submodule "cyrus-sasl"]
 	path = cyrus-sasl
 	url = ../cyrus-sasl
+[submodule "shibboleth/resolver"]
+	path = shibboleth/resolver
+	url = ../shibboleth/resolver.git
+[submodule "libeap"]
+	path = libeap
+	url = ../libeap.git
