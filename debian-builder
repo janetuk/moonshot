@@ -1,0 +1,111 @@
+#!/usr/bin/python
+
+from contextlib import contextmanager
+import os, subprocess, exceptions
+import debian.changelog, debian.deb822
+from shutil import copy
+
+
+
+packages = [
+    'shibboleth/xmltooling',
+    "shibboleth/opensaml2"]
+distribution = "sid"
+build_place = os.path.join(os.getcwd(), 'debian_build')
+
+class CommandError(exceptions.StandardError):
+    pass
+
+@contextmanager
+def current_directory(dir):
+    "Change the current directory as a context manager; when the context exits, return."
+    cwd = os.getcwd()
+    os.chdir(dir)
+    yield
+    os.chdir(cwd)
+
+def run_cmd(args, **kwords):
+    rcode =  subprocess.call( args, **kwords)
+    if rcode <> 0:
+        raise CommandError(args)
+
+def command_output(args) :
+    p = subprocess.Popen(args, stdout=subprocess.PIPE)
+    output = p.communicate()
+    output = output[0]
+    if p.returncode != 0:
+        raise CommandError(args)
+    return output
+
+def dsc_files(dsc) :
+    '''Describe all the files included in dsc, wich is a string name
+    of a dsc package. dsc itself is included'''
+    package = debian.deb822.Dsc(file(dsc))
+    internal_files = map( lambda(x): x['name'], package['Files'])
+    internal_files.append(dsc)
+    return internal_files
+
+def build(package):
+    with current_directory(package):
+        cl = debian.changelog.Changelog(file('debian/changelog'))
+        package_name = cl.package
+        package_version = str(cl.version)
+        orig_tgz = package_name+'_'+ cl.upstream_version + ".orig.tar.gz"
+        dsc_name = package_name+"_"+package_version + ".dsc"
+        source_format = command_output(('dpkg-source', '--print-format', '.'))
+        if "native" not in source_format:
+            run_cmd( ('pristine-tar', 'checkout', '../'+orig_tgz))
+    package_path = os.path.split(package)
+    with current_directory(os.path.join ('.', *package_path[0:len(package_path)-1])) :
+        package_path = package_path[len(package_path)-1]
+        try:
+            run_cmd(("dpkg-source", '-b', '-i', package_path))
+            for f in dsc_files(dsc_name):
+                copy(f, build_place)
+        finally:
+            for f in dsc_files(dsc_name):
+                try: os.unlink(f)
+                except OSError: pass
+    with current_directory(build_place):
+        run_cmd(('sbuild', '-d', distribution, '--setup-hook',
+    build_place + '/add_source',
+                 dsc_name))
+
+def gen_package_files() :
+    '''Generate package files in build_place and a script
+    build_place/add_source that can be used as a sbuild setup hook to
+    include the package files. Unfortunately, apt doesn't have a
+    mechanism for asserting that a package file is trusted when it is
+    local. We could generate a unique gpg key, generate signed
+    releases files and trust that key. It's easier to simply touch the
+    release.gpg in apt's lists directory, which turns out to do what
+    we need.'''
+    # Rather than substuting the release file directly, we create gpg
+    # release files for any  local package list. That's easier than
+    # encoding apt's ideas about what characters to escape.
+    script = '''#!/bin/sh
+    set -e
+    echo deb file:{build_place} ./ >>/etc/apt/sources.list
+    apt-get update
+    touch $(ls /var/lib/apt/lists/_*Packages \
+        |sed -e s:Packages\$:Release.gpg:)
+    '''.format (
+        build_place = build_place
+        )
+    f = file(build_place + "/add_source", "w")
+    f.write(script)
+    f.close()
+    with current_directory(build_place):
+        run_cmd(('chmod', 'a+x', 'add_source'))
+        run_cmd( 'dpkg-scanpackages . >Packages',
+                 shell = True)
+        
+try:
+    for p in packages:
+        gen_package_files()
+        build(p)
+except CommandError as c:
+    print "Error:" + str(c.args)
+    exit(1)
+
+    
