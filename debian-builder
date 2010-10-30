@@ -101,6 +101,10 @@ def gen_package_files() :
                  shell = True)
         
 try:
+    os.makedirs(build_place)
+except OSError: pass
+
+try:
     for p in packages:
         gen_package_files()
         build(p)
