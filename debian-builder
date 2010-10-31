@@ -1,15 +1,25 @@
 #!/usr/bin/python
 
+'''A script to build Debian packages using sbuild from a source
+directory rather than a source package. Also, if multiple packages are
+built, previous packages are available to satisfy
+dependencies. Requires that the build-place be available from the
+chroot.
+'''
+
 from contextlib import contextmanager
 import os, subprocess, exceptions
-import debian.changelog, debian.deb822
+import re
+import sys
+from optparse import OptionParser
 from shutil import copy
 
+import debian.changelog, debian.deb822
 
 
-packages = [
-    'shibboleth/xmltooling',
-    "shibboleth/opensaml2"]
+# These variables can be overridden by options. If packages is not
+# set, then it is read from the source_packages file
+packages = []  # Set of packages to build
 distribution = "sid"
 build_place = os.path.join(os.getcwd(), 'debian_build')
 
@@ -23,6 +33,7 @@ def current_directory(dir):
     os.chdir(dir)
     yield
     os.chdir(cwd)
+
 
 def run_cmd(args, **kwords):
     rcode =  subprocess.call( args, **kwords)
@@ -52,6 +63,7 @@ def build(package):
         package_version = str(cl.version)
         orig_tgz = package_name+'_'+ cl.upstream_version + ".orig.tar.gz"
         dsc_name = package_name+"_"+package_version + ".dsc"
+        print "==> Package: ", package_name
         source_format = command_output(('dpkg-source', '--print-format', '.'))
         if "native" not in source_format:
             run_cmd( ('pristine-tar', 'checkout', '../'+orig_tgz))
@@ -67,9 +79,13 @@ def build(package):
                 try: os.unlink(f)
                 except OSError: pass
     with current_directory(build_place):
-        run_cmd(('sbuild', '-d', distribution, '--setup-hook',
-    build_place + '/add_source',
-                 dsc_name))
+        sb = ['sbuild', '-n', '-d', distribution, '--setup-hook',
+    build_place + '/add_source']
+        if sbuild_opts is not None: sb += sbuild_opts
+        sb.append(dsc_name)
+        print " ".join(sb)
+        sys.stdout.flush()
+        run_cmd(sb)
 
 def gen_package_files() :
     '''Generate package files in build_place and a script
@@ -99,7 +115,45 @@ def gen_package_files() :
         run_cmd(('chmod', 'a+x', 'add_source'))
         run_cmd( 'dpkg-scanpackages . >Packages',
                  shell = True)
-        
+
+
+def read_packages():
+    '''Read in the packages file from source_packages
+    '''
+    try: pf = file("source_packages")
+    except IOError:
+        print "Error: source_packages file not found"
+        exit(1)
+    def is_comment(line):
+        if re.match("^\\s*#", line): return False
+        if "#" in line: raise ValueError(
+            "Source package line contains a comment but not at beginning")
+        return True
+    return map(lambda(x): x.rstrip(),
+        filter(is_comment, pf.readlines()))
+
+
+# main program
+opt = OptionParser()
+opt.add_option('-b', '--build-place',
+               dest='build_place', help="Write resulting packages to BUILD_PLACE",
+               default=build_place)
+opt.add_option('-d', '--distribution',
+               help="Set the Debian distribution to DISTRIBUTION",
+               dest="distribution",
+               default=distribution
+               )
+opt.add_option('-s', '--sbuild-opt',
+               action='append', dest='sbuild_opts',
+               help='Specify an option to be sent to sbuild')
+opt.usage = "%prog [options] [packages]"
+(options, packages) = opt.parse_args()
+build_place = options.build_place
+distribution = options.distribution
+sbuild_opts = options.sbuild_opts
+
+if len(packages) == 0: packages = read_packages()
+
 try:
     os.makedirs(build_place)
 except OSError: pass
