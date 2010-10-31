@@ -26,6 +26,7 @@
 import commands
 import logging
 import os
+import exceptions
 import re
 import sys
 
@@ -85,6 +86,26 @@ def addChange(remote, changei):
 def connected(remote):
     return addChange(remote, changes.__iter__())
 
+def add_package(c, files, rev):
+    packages_str = commands.getoutput("git show %s:source_packages" % rev)
+    packages = packages_str.split("\n")
+    packages_found = {}
+    class NoPackage(exceptions.Exception): pass
+    try:
+        for f in files:
+            found = False
+            for p in packages:
+                if f.startswith(p):
+                    packages_found[p] = True
+                    found = True
+                    break
+            if not found: raise NoPackage()
+    except NoPackage:
+        return
+    c["properties"] = {
+        "package": " ".join(packages_found.keys())
+        }
+
 
 def grab_commit_info(c, rev):
     # Extract information about committer and files using git show
@@ -115,7 +136,7 @@ def grab_commit_info(c, rev):
     status = f.close()
     if status:
         logging.warning("git show exited with status %d" % status)
-
+    add_package(c, files, rev)
 
 def gen_changes(input, branch):
     while True:
