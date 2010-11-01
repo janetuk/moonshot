@@ -2,4 +2,5 @@
 # Debian source packages one per line.
 # Lines starting with # are comments
 shibboleth/xmltooling
-shibboleth/opensmal2
+shibboleth/opensaml2
+shibboleth/sp
