@@ -22,3 +22,6 @@
 [submodule "libeap"]
 	path = libeap
 	url = ../libeap.git
+[submodule "freeradius"]
+	path = freeradius
+	url = git://git.freeradius.org/freeradius-server.git
