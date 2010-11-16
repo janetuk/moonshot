@@ -128,7 +128,7 @@ if options.configure_opts is not None:
 our_schroot = None
 if options.schroot is not None:
     our_schroot = Schroot(options.schroot)
-    root_command = "schroot -r -c " + our_schroot.name
+    root_command = "schroot -u root -r -c " + our_schroot.name
 
 all_packages = read_packages()
 if len(packages) == 0: packages = all_packages
