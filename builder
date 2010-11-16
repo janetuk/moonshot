@@ -69,8 +69,11 @@ def command_output(args) :
 def build(package):
     with current_directory(package):
         run_cmd(('autoreconf', '-i', '-f'))
-        configure_command = ' '.join([schroot_command,
+        configure_command = ' '.join([
                                       './configure'] + configure_opts)
+        if len(schroot_command) > 0:
+            configure_command = schroot_command + " -- " \
+                + configure_command
         print configure_command
         sys.stdout.flush()
         run_cmd(configure_command, shell=True)
