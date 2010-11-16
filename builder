@@ -119,7 +119,7 @@ opt.usage = "%prog [options] [packages]"
 prefix = options.prefix
 root_command = options.root_command
 configure_opts = ['--prefix', prefix,
-                  "LDFLAGS='-Wl,-L "+prefix+"/lib"
+                  "LDFLAGS='-Wl,-L"+prefix+"/lib"
                   + " -Wl,-R"+prefix+"/lib'",
                   'CPPFLAGS="-I '+prefix+'/include"']
 if options.configure_opts is not None: 
@@ -140,7 +140,7 @@ try:
         make_install(p)
 except CommandError as c:
     print "Error:" + str(c.args)
-    del our_schroot
+    our_schroot = None
     exit(1)
 finally: del our_schroot
 
