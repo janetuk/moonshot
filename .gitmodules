@@ -24,4 +24,4 @@
 	url = ../libeap.git
 [submodule "freeradius"]
 	path = freeradius
-	url = git://git.freeradius.org/freeradius-server.git
+	url = http://www.project-moonshot.org/git/freeradius.git
