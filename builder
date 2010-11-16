@@ -77,7 +77,7 @@ def build(package):
         print configure_command
         sys.stdout.flush()
         run_cmd(configure_command, shell=True)
-        run_cmd(schroot_command + ' make', shell=true)
+        run_cmd(schroot_command + ' make', shell=True)
 
 def make_install(package):
     with current_directory(package):
