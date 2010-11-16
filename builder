@@ -18,6 +18,8 @@ packages = []  # Set of packages to build
 prefix = "/usr/local/moonshot"
 root_command = "fakeroot"
 
+schroot_command = ""
+
 class CommandError(exceptions.StandardError):
     pass
 
@@ -67,11 +69,12 @@ def command_output(args) :
 def build(package):
     with current_directory(package):
         run_cmd(('autoreconf', '-i', '-f'))
-        configure_command = ' '.join(['./configure'] + configure_opts)
+        configure_command = ' '.join([schroot_command,
+                                      './configure'] + configure_opts)
         print configure_command
         sys.stdout.flush()
         run_cmd(configure_command, shell=True)
-        run_cmd('make')
+        run_cmd(schroot_command + ' make', shell=true)
 
 def make_install(package):
     with current_directory(package):
@@ -128,7 +131,8 @@ if options.configure_opts is not None:
 our_schroot = None
 if options.schroot is not None:
     our_schroot = Schroot(options.schroot)
-    root_command = "schroot -u root -r -c " + our_schroot.name
+    schroot_command = "schroot -r -c " + our_schroot.name
+    root_command = schroot_command + " -u root"
 
 all_packages = read_packages()
 if len(packages) == 0: packages = all_packages
