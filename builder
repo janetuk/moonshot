@@ -28,7 +28,7 @@ class Schroot(object):
         '''Initialize a new schroot option from the named
         schroot. Unless the named schroot starts with session:, then a
         new session schroot is created.'''
-        if name.startswith('session:'):
+        if not name.startswith('session:'):
             self.name = command_output(('schroot', '-b',
                                         '-c', name))
             self.end_session = True
