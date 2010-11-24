@@ -127,7 +127,9 @@ root_command = options.root_command
 configure_opts = ['--prefix', prefix,
                   "LDFLAGS='-Wl,-L"+prefix+"/lib"
                   + " -Wl,-R"+prefix+"/lib'",
-                  'CPPFLAGS="-I '+prefix+'/include"']
+                  'CPPFLAGS="-I '+prefix+'/include"',
+                  '--with-system-libtool', '--with-system-ltdl',
+                  ]
 if options.configure_opts is not None: 
     configure_opts.extend(options.configure_opts)
 
