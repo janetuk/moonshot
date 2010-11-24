@@ -140,6 +140,7 @@ if options.schroot is not None:
 all_packages = read_packages()
 if len(packages) == 0: packages = all_packages
 
+os.umask(022)
 
 try:
     for p in all_packages:
