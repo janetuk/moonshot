@@ -51,14 +51,14 @@ def command_output(args) :
 def dsc_files(dsc) :
     '''Describe all the files included in dsc, wich is a string name
     of a dsc package. dsc itself is included'''
-    package = debian.deb822.Dsc(file(dsc))
+    package = debian.deb822.Dsc(open(dsc))
     internal_files = map( lambda(x): x['name'], package['Files'])
     internal_files.append(dsc)
     return internal_files
 
 def build(package):
     with current_directory(package):
-        cl = debian.changelog.Changelog(file('debian/changelog'))
+        cl = debian.changelog.Changelog(open('debian/changelog'))
         package_name = cl.package
         package_version = str(cl.version)
         orig_tgz = package_name+'_'+ cl.upstream_version + ".orig.tar.gz"
@@ -108,7 +108,7 @@ def gen_package_files() :
     '''.format (
         build_place = build_place
         )
-    f = file(build_place + "/add_source", "w")
+    f = open(build_place + "/add_source", "w")
     f.write(script)
     f.close()
     with current_directory(build_place):
@@ -120,7 +120,7 @@ def gen_package_files() :
 def read_packages():
     '''Read in the packages file from source_packages
     '''
-    try: pf = file("source_packages")
+    try: pf = open("source_packages")
     except IOError:
         print "Error: source_packages file not found"
         exit(1)
