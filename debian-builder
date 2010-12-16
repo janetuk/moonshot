@@ -16,7 +16,6 @@ from shutil import copy
 
 import debian.changelog, debian.deb822
 
-
 # These variables can be overridden by options. If packages is not
 # set, then it is read from the source_packages file
 packages = []  # Set of packages to build
@@ -153,7 +152,6 @@ distribution = options.distribution
 sbuild_opts = options.sbuild_opts
 
 if len(packages) == 0: packages = read_packages()
-
 try:
     os.makedirs(build_place)
 except OSError: pass
