@@ -1,24 +1,27 @@
 [submodule "mod_auth_kerb"]
 	path = mod_auth_kerb
-	url = ../mod_auth_kerb.git
+	url = http://www.project-moonshot.org/git/mod_auth_kerb.git
 [submodule "radsecproxy"]
 	path = libradsec
 	url = git://git.nordu.net/radsecproxy.git
 [submodule "shibboleth/opensaml2"]
 	path = shibboleth/opensaml2
-	url = ../shibboleth/opensaml2.git
+	url = http://www.project-moonshot.org/git/shibboleth/opensaml2.git
 [submodule "shibboleth/sp"]
 	path = shibboleth/sp
-	url = ../shibboleth/sp.git
+	url = http://www.project-moonshot.org/git/shibboleth/sp.git
 [submodule "shibboleth/xmltooling"]
 	path = shibboleth/xmltooling
-	url = ../shibboleth/xmltooling.git
+	url = http://www.project-moonshot.org/git/shibboleth/xmltooling.git
 [submodule "cyrus-sasl"]
 	path = cyrus-sasl
-	url = ../cyrus-sasl
+	url = http://www.project-moonshot.org/git/cyrus-sasl
 [submodule "shibboleth/resolver"]
 	path = shibboleth/resolver
-	url = ../shibboleth/resolver.git
+	url = http://www.project-moonshot.org/git/shibboleth/resolver.git
 [submodule "libeap"]
 	path = libeap
-	url = ../libeap.git
+	url = http://www.project-moonshot.org/git/libeap.git
+[submodule "freeradius"]
+	path = freeradius
+	url = http://www.project-moonshot.org/git/freeradius.git
