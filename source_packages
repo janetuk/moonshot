@@ -5,4 +5,4 @@ shibboleth/xmltooling
 shibboleth/opensaml2
 shibboleth/sp
 shibboleth/resolver
-freeradius
+libradsec/lib
