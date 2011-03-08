@@ -6,3 +6,5 @@ shibboleth/opensaml2
 shibboleth/sp
 shibboleth/resolver
 libradsec/lib
+libeap
+mech_eap
