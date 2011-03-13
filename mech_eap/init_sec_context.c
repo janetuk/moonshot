@@ -558,6 +558,51 @@ eapGssSmInitAcceptorName(OM_uint32 *minor,
     return GSS_S_CONTINUE_NEEDED;
 }
 
+#if 0
+/* supported inner token types beyond those mandated by specification */
+static OM_uint32
+gssEapSupportedAcceptorExts[] = {
+    ITOK_TYPE_REAUTH_CREDS,
+};
+
+static OM_uint32
+eapGssSmInitExts(OM_uint32 *minor,
+                 gss_cred_id_t cred,
+                 gss_ctx_id_t ctx,
+                 gss_name_t target,
+                 gss_OID mech,
+                 OM_uint32 reqFlags,
+                 OM_uint32 timeReq,
+                 gss_channel_bindings_t chanBindings,
+                 gss_buffer_t inputToken,
+                 gss_buffer_t outputToken,
+                 OM_uint32 *smFlags)
+{
+    size_t i;
+    unsigned char *p;
+
+    if (GSSEAP_SM_STATE(ctx) == GSSEAP_STATE_INITIAL) {
+        outputToken->value = GSSEAP_MALLOC(sizeof(gssEapSupportedAcceptorExts));
+        if (outputToken->value == NULL) {
+            *minor = ENOMEM;
+            return GSS_S_FAILURE;
+        }
+        outputToken->length = sizeof(gssEapSupportedAcceptorExts);
+
+        for (i = 0, p = (unsigned char *)outputToken->value;
+             i < sizeof(gssEapSupportedAcceptorExts)
+                / sizeof(gssEapSupportedAcceptorExts[0]);
+            i++) {
+            store_uint32_be(gssEapSupportedAcceptorExts[i], p);
+            p += 4;
+        }
+    } else if (inputToken != GSS_C_NO_BUFFER) {
+    }
+
+    return GSS_S_CONTINUE_NEEDED;
+}
+#endif
+
 static OM_uint32
 eapGssSmInitIdentity(OM_uint32 *minor,
                      gss_cred_id_t cred,
@@ -811,6 +856,15 @@ static struct gss_eap_sm eapGssInitiatorSm[] = {
         0,
         eapGssSmInitAcceptorName
     },
+#if 0
+    {
+        ITOK_TYPE_INITIATOR_EXTS,
+        ITOK_TYPE_ACCEPTOR_EXTS,
+        GSSEAP_STATE_INITIAL | GSSEAP_STATE_AUTHENTICATE,
+        0,
+        eapGssSmInitExts
+    },
+#endif
 #ifdef GSSEAP_DEBUG
     {
         ITOK_TYPE_NONE,

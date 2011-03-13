@@ -169,8 +169,12 @@ enum gss_eap_token_type {
 #define ITOK_TYPE_REAUTH_CREDS          0x00000007 /* optional */
 #define ITOK_TYPE_REAUTH_REQ            0x00000008 /* optional */
 #define ITOK_TYPE_REAUTH_RESP           0x00000009 /* optional */
-#define ITOK_TYPE_VERSION_INFO          0x0000000A /* optional */
-#define ITOK_TYPE_VENDOR_INFO           0x0000000B /* optional */
+#define ITOK_TYPE_INITIATOR_MIC         0x0000000A /* required */
+#define ITOK_TYPE_ACCEPTOR_MIC          0x0000000B /* required */
+#define ITOK_TYPE_ACCEPTOR_EXTS         0x0000000C /* optional, acceptor exts supported */
+#define ITOK_TYPE_INITIATOR_EXTS        0x0000000D /* optional, initiator exts supported */
+#define ITOK_TYPE_VERSION_INFO          0x0000000E /* optional */
+#define ITOK_TYPE_VENDOR_INFO           0x0000000F /* optional */
 
 #define ITOK_FLAG_CRITICAL              0x80000000  /* critical, wire flag */
 #define ITOK_FLAG_VERIFIED              0x40000000  /* verified, API flag */
