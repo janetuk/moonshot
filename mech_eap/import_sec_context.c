@@ -49,7 +49,7 @@
     } while (0)
 
 static OM_uint32
-gssEapImportPartialContext(OM_uint32 *minor,
+importPartialRadiusContext(OM_uint32 *minor,
                            unsigned char **pBuf,
                            size_t *pRemain,
                            gss_ctx_id_t ctx)
@@ -228,6 +228,47 @@ importName(OM_uint32 *minor,
 }
 
 static OM_uint32
+importConversation(OM_uint32 *minor,
+                   unsigned char **pBuf,
+                   size_t *pRemain,
+                   gss_ctx_id_t ctx)
+{
+    OM_uint32 major;
+    unsigned char *p = *pBuf;
+    size_t remain = *pRemain;
+    gss_buffer_desc tmp;
+
+    if (remain < 4) {
+        *minor = GSSEAP_TOK_TRUNC;
+        return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    tmp.length = load_uint32_be(p);
+    if (tmp.length == 0 ||
+        remain - 4 < tmp.length) {
+        *minor = GSSEAP_TOK_TRUNC;
+        return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    if (p[4] != 0x06) {
+        *minor = GSSEAP_BAD_TOK_HEADER;
+        return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    tmp.value = p + 4;
+
+    major = duplicateBuffer(minor, &tmp, &ctx->conversation);
+    if (GSS_ERROR(major))
+        return major;
+
+    *pBuf    += 4 + tmp.length;
+    *pRemain -= 4 + tmp.length;
+
+    *minor = 0;
+    return GSS_S_COMPLETE;
+}
+
+static OM_uint32
 gssEapImportContext(OM_uint32 *minor,
                     gss_buffer_t token,
                     gss_ctx_id_t ctx)
@@ -304,11 +345,15 @@ gssEapImportContext(OM_uint32 *minor,
      * acceptor contexts.
      */
     if (!CTX_IS_INITIATOR(ctx) && !CTX_IS_ESTABLISHED(ctx)) {
-        assert((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0);
-
-        major = gssEapImportPartialContext(minor, &p, &remain, ctx);
+        major = importConversation(minor, &p, &remain, ctx);
         if (GSS_ERROR(major))
             return major;
+
+        if ((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0) {
+            major = importPartialRadiusContext(minor, &p, &remain, ctx);
+            if (GSS_ERROR(major))
+                return major;
+        }
     }
 
 #ifdef GSSEAP_DEBUG

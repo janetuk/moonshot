@@ -38,7 +38,7 @@
 #include "gssapiP_eap.h"
 
 static OM_uint32
-gssEapExportPartialContext(OM_uint32 *minor,
+exportPartialRadiusContext(OM_uint32 *minor,
                            gss_ctx_id_t ctx,
                            gss_buffer_t token)
 {
@@ -136,10 +136,10 @@ gssEapExportSecContext(OM_uint32 *minor,
      * The partial context is only transmitted for unestablished acceptor
      * contexts.
      */
-    if (!CTX_IS_INITIATOR(ctx) && !CTX_IS_ESTABLISHED(ctx)) {
-        assert((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0);
-
-        major = gssEapExportPartialContext(minor, ctx, &partialCtx);
+    if (!CTX_IS_INITIATOR(ctx) &&
+        !CTX_IS_ESTABLISHED(ctx) &&
+        ((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0)) {
+        major = exportPartialRadiusContext(minor, ctx, &partialCtx);
         if (GSS_ERROR(major))
             goto cleanup;
     }
@@ -150,6 +150,9 @@ gssEapExportSecContext(OM_uint32 *minor,
     length += 4 + initiatorName.length;         /* initiatorName.value */
     length += 4 + acceptorName.length;          /* acceptorName.value */
     length += 24 + sequenceSize(ctx->seqState); /* seqState */
+
+    if (!CTX_IS_INITIATOR(ctx) && !CTX_IS_ESTABLISHED(ctx))
+        length += 4 + ctx->conversation.length;
 
     if (partialCtx.value != NULL)
         length += 4 + partialCtx.length;        /* partialCtx.value */
@@ -185,6 +188,9 @@ gssEapExportSecContext(OM_uint32 *minor,
     major = sequenceExternalize(minor, ctx->seqState, &p, &length);
     if (GSS_ERROR(major))
         goto cleanup;
+
+    if (!CTX_IS_INITIATOR(ctx) && !CTX_IS_ESTABLISHED(ctx))
+        p = store_buffer(&ctx->conversation, &p, FALSE);
 
     if (partialCtx.value != NULL)
         p = store_buffer(&partialCtx, p, FALSE);
