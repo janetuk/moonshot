@@ -478,10 +478,13 @@ eapGssSmInitGssReauth(OM_uint32 *minor,
         major = gssEapReauthComplete(minor, ctx, cred, actualMech, timeRec);
         if (GSS_ERROR(major))
             goto cleanup;
-        GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_ESTABLISHED);
+
+        GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_INITIATOR_EXTS);
     } else {
         GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_REAUTHENTICATE);
     }
+
+    major = GSS_S_CONTINUE_NEEDED;
 
 cleanup:
     gssReleaseName(&tmpMinor, &mechTarget);
@@ -757,6 +760,9 @@ eapGssSmInitGssChannelBindings(OM_uint32 *minor,
     OM_uint32 major;
     gss_buffer_desc buffer = GSS_C_EMPTY_BUFFER;
 
+    if (ctx->flags & CTX_FLAG_KRB_REAUTH)
+        return GSS_S_CONTINUE_NEEDED;
+
     if (chanBindings != GSS_C_NO_CHANNEL_BINDINGS)
         buffer = chanBindings->application_data;
 
@@ -922,6 +928,9 @@ static struct gss_eap_sm eapGssInitiatorSm[] = {
     {
         ITOK_TYPE_NONE,
         ITOK_TYPE_INITIATOR_MIC,
+#ifdef GSSEAP_ENABLE_REAUTH
+        GSSEAP_STATE_REAUTHENTICATE |
+#endif
         GSSEAP_STATE_INITIATOR_EXTS,
         0,
         eapGssSmInitInitiatorMIC

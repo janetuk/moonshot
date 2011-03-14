@@ -329,6 +329,10 @@ gssEapSmStep(OM_uint32 *minor,
         } else if ((smp->itokFlags & SM_ITOK_FLAG_REQUIRED) &&
             smp->inputTokenType != ITOK_TYPE_NONE) {
             /* Check for required inner tokens */
+#ifdef GSSEAP_DEBUG
+            fprintf(stderr, "GSS-EAP: missing required token %08X\n",
+                    smp->inputTokenType);
+#endif
             major = GSS_S_DEFECTIVE_TOKEN;
             *minor = GSSEAP_MISSING_REQUIRED_ITOK;
             break;

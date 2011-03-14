@@ -619,6 +619,9 @@ eapGssSmAcceptGssChannelBindings(OM_uint32 *minor,
     OM_uint32 major, tmpMinor;
     gss_iov_buffer_desc iov[2];
 
+    if (ctx->flags & CTX_FLAG_KRB_REAUTH)
+        return GSS_S_CONTINUE_NEEDED;
+
     iov[0].type = GSS_IOV_BUFFER_TYPE_DATA | GSS_IOV_BUFFER_FLAG_ALLOCATE;
     iov[0].buffer.length = 0;
     iov[0].buffer.value = NULL;
@@ -772,7 +775,7 @@ static struct gss_eap_sm eapGssAcceptorSm[] = {
         ITOK_TYPE_GSS_CHANNEL_BINDINGS,
         ITOK_TYPE_NONE,
         GSSEAP_STATE_INITIATOR_EXTS,
-        SM_ITOK_FLAG_REQUIRED,
+        0,
         eapGssSmAcceptGssChannelBindings,
     },
     {
@@ -979,7 +982,7 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
         major = acceptReadyKrb(minor, ctx, cred,
                                krbInitiator, mech, timeRec);
         if (major == GSS_S_COMPLETE) {
-            GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_ESTABLISHED);
+            GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_INITIATOR_EXTS);
         }
         ctx->gssFlags = gssFlags;
     } else if (GSS_ERROR(major) &&
@@ -988,8 +991,9 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
         gssDeleteSecContext(&tmpMinor, &ctx->kerberosCtx, GSS_C_NO_BUFFER);
         ctx->flags &= ~(CTX_FLAG_KRB_REAUTH);
         GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_INITIAL);
-        major = GSS_S_CONTINUE_NEEDED;
     }
+
+    major = GSS_S_CONTINUE_NEEDED;
 
     gssReleaseName(&tmpMinor, &krbInitiator);
 
