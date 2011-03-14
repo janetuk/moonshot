@@ -197,7 +197,7 @@ gssEapRecordContextTokenHeader(OM_uint32 *minor,
     store_uint16_be(tokType, wireTokType);
     buffers[2].length = sizeof(wireTokType);
     buffers[2].value = wireTokType;
- 
+
     return recordTokens(minor, ctx, buffers, sizeof(buffers)/sizeof(buffers[0]));
 }
 
