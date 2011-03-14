@@ -347,7 +347,7 @@ gssEapVerifyConversationMIC(OM_uint32 *minor,
     int confState;
     size_t tokenHeaderLength;
 
-    if (convMIC->length < 16) {
+    if (convMIC == GSS_C_NO_BUFFER || convMIC->length < 16) {
         *minor = GSSEAP_TOK_TRUNC;
         return GSS_S_BAD_SIG;
     }
@@ -355,9 +355,12 @@ gssEapVerifyConversationMIC(OM_uint32 *minor,
     iov[0].type = GSS_IOV_BUFFER_TYPE_DATA;
     iov[0].buffer = ctx->conversation;
 
-    /* Back out token header for the next response token. */
-    assert(ctx->mechanismUsed != GSS_C_NO_OID);
-    tokenHeaderLength = 2 + ctx->mechanismUsed->length + 2;
+    /*
+     * The conversation state already includes the MIC and its
+     * TLV header, as well as a header for emiting a subsequent
+     * token. These should not be included as input to verifyMIC.
+     */
+    tokenHeaderLength = 8 + convMIC->length + 2 + ctx->mechanismUsed->length + 2;
     assert(ctx->conversation.length > tokenHeaderLength);
     iov[0].buffer.length -= tokenHeaderLength;
 

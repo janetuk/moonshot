@@ -813,12 +813,16 @@ eapGssSmInitInitiatorMIC(OM_uint32 *minor,
                          gss_buffer_t outputToken,
                          OM_uint32 *smFlags)
 {
-    gss_buffer_desc conversation;
+    OM_uint32 major;
+
+    major = gssEapGetConversationMIC(minor, ctx, outputToken);
+    if (GSS_ERROR(major))
+        return major;
 
     GSSEAP_SM_TRANSITION_NEXT(ctx);
 
     *minor = 0;
-    *smFlags |= SM_FLAG_FORCE_SEND_TOKEN;
+    *smFlags |= SM_FLAG_OUTPUT_TOKEN_CRITICAL;
 
     return GSS_S_CONTINUE_NEEDED;
 }

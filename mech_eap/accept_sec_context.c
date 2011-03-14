@@ -676,18 +676,24 @@ eapGssSmAcceptReauthCreds(OM_uint32 *minor,
 #endif
 
 static OM_uint32
-eapGssSmAcceptCompleteInitiatorExts(OM_uint32 *minor,
-                                    gss_cred_id_t cred,
-                                    gss_ctx_id_t ctx,
-                                    gss_name_t target,
-                                    gss_OID mech,
-                                    OM_uint32 reqFlags,
-                                    OM_uint32 timeReq,
-                                    gss_channel_bindings_t chanBindings,
-                                    gss_buffer_t inputToken,
-                                    gss_buffer_t outputToken,
-                                    OM_uint32 *smFlags)
+eapGssSmAcceptInitiatorMIC(OM_uint32 *minor,
+                           gss_cred_id_t cred,
+                           gss_ctx_id_t ctx,
+                           gss_name_t target,
+                           gss_OID mech,
+                           OM_uint32 reqFlags,
+                           OM_uint32 timeReq,
+                           gss_channel_bindings_t chanBindings,
+                           gss_buffer_t inputToken,
+                           gss_buffer_t outputToken,
+                           OM_uint32 *smFlags)
 {
+    OM_uint32 major;
+
+    major = gssEapVerifyConversationMIC(minor, ctx, inputToken);
+    if (GSS_ERROR(major))
+        return major;
+
     GSSEAP_SM_TRANSITION_NEXT(ctx);
 
     *minor = 0;
@@ -764,11 +770,11 @@ static struct gss_eap_sm eapGssAcceptorSm[] = {
         eapGssSmAcceptGssChannelBindings,
     },
     {
-        ITOK_TYPE_NONE,
+        ITOK_TYPE_INITIATOR_MIC,
         ITOK_TYPE_NONE,
         GSSEAP_STATE_INITIATOR_EXTS,
-        0,
-        eapGssSmAcceptCompleteInitiatorExts,
+        SM_ITOK_FLAG_REQUIRED,
+        eapGssSmAcceptInitiatorMIC,
     },
 #ifdef GSSEAP_ENABLE_REAUTH
     {
@@ -781,7 +787,7 @@ static struct gss_eap_sm eapGssAcceptorSm[] = {
 #endif
     {
         ITOK_TYPE_NONE,
-        ITOK_TYPE_NONE,
+        ITOK_TYPE_ACCEPTOR_MIC,
         GSSEAP_STATE_ACCEPTOR_EXTS,
         0,
         eapGssSmAcceptCompleteAcceptorExts
