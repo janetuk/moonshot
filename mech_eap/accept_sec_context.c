@@ -702,22 +702,28 @@ eapGssSmAcceptInitiatorMIC(OM_uint32 *minor,
 }
 
 static OM_uint32
-eapGssSmAcceptCompleteAcceptorExts(OM_uint32 *minor,
-                                   gss_cred_id_t cred,
-                                   gss_ctx_id_t ctx,
-                                   gss_name_t target,
-                                   gss_OID mech,
-                                   OM_uint32 reqFlags,
-                                   OM_uint32 timeReq,
-                                   gss_channel_bindings_t chanBindings,
-                                   gss_buffer_t inputToken,
-                                   gss_buffer_t outputToken,
-                                   OM_uint32 *smFlags)
+eapGssSmAcceptAcceptorMIC(OM_uint32 *minor,
+                          gss_cred_id_t cred,
+                          gss_ctx_id_t ctx,
+                          gss_name_t target,
+                          gss_OID mech,
+                          OM_uint32 reqFlags,
+                          OM_uint32 timeReq,
+                          gss_channel_bindings_t chanBindings,
+                          gss_buffer_t inputToken,
+                          gss_buffer_t outputToken,
+                          OM_uint32 *smFlags)
 {
+    OM_uint32 major;
+
+    major = gssEapGetConversationMIC(minor, ctx, outputToken);
+    if (GSS_ERROR(major))
+        return major;
+
     GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_ESTABLISHED);
 
     *minor = 0;
-    *smFlags |= SM_FLAG_FORCE_SEND_TOKEN;
+    *smFlags |= SM_FLAG_OUTPUT_TOKEN_CRITICAL;
 
     return GSS_S_COMPLETE;
 }
@@ -790,7 +796,7 @@ static struct gss_eap_sm eapGssAcceptorSm[] = {
         ITOK_TYPE_ACCEPTOR_MIC,
         GSSEAP_STATE_ACCEPTOR_EXTS,
         0,
-        eapGssSmAcceptCompleteAcceptorExts
+        eapGssSmAcceptAcceptorMIC
     },
 };
 
