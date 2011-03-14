@@ -269,12 +269,6 @@ initReady(OM_uint32 *minor, gss_ctx_id_t ctx, OM_uint32 reqFlags)
     const unsigned char *key;
     size_t keyLength;
 
-#if 1
-    /* XXX actually check for mutual auth */
-    if (reqFlags & GSS_C_MUTUAL_FLAG)
-        ctx->gssFlags |= GSS_C_MUTUAL_FLAG;
-#endif
-
     /* Cache encryption type derived from selected mechanism OID */
     major = gssEapOidToEnctype(minor, ctx->mechanismUsed, &ctx->encryptionType);
     if (GSS_ERROR(major))
