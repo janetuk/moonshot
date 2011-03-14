@@ -928,9 +928,6 @@ static struct gss_eap_sm eapGssInitiatorSm[] = {
     {
         ITOK_TYPE_NONE,
         ITOK_TYPE_INITIATOR_MIC,
-#ifdef GSSEAP_ENABLE_REAUTH
-        GSSEAP_STATE_REAUTHENTICATE |
-#endif
         GSSEAP_STATE_INITIATOR_EXTS,
         0,
         eapGssSmInitInitiatorMIC
