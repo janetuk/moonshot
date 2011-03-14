@@ -280,28 +280,6 @@ gssEapVerifyContextToken(OM_uint32 *minor,
 }
 
 OM_uint32
-gssEapContextTime(OM_uint32 *minor,
-                  gss_ctx_id_t context_handle,
-                  OM_uint32 *time_rec)
-{
-    if (context_handle->expiryTime == 0) {
-        *time_rec = GSS_C_INDEFINITE;
-    } else {
-        time_t now, lifetime;
-
-        time(&now);
-        lifetime = context_handle->expiryTime - now;
-        if (lifetime <= 0) {
-            *time_rec = 0;
-            return GSS_S_CONTEXT_EXPIRED;
-        }
-        *time_rec = lifetime;
-    }
-
-    return GSS_S_COMPLETE;
-}
-
-OM_uint32
 gssEapEncodeSupportedExts(OM_uint32 *minor,
                           OM_uint32 *types,
                           size_t typesCount,
@@ -357,53 +335,6 @@ gssEapProcessSupportedExts(OM_uint32 *minor,
         }
 
         p += 4;
-    }
-
-    *minor = 0;
-    return GSS_S_COMPLETE;
-}
-
-OM_uint32
-gssEapMakeTokenChannelBindings(OM_uint32 *minor,
-                               gss_ctx_id_t ctx,
-                               gss_channel_bindings_t userChanBindings,
-                               gss_buffer_t inputToken,
-                               gss_channel_bindings_t wireChanBindings)
-{
-    gss_buffer_t wireData = &wireChanBindings->application_data;
-    unsigned char *p;
-    size_t tokenHeaderLength = 0;
-
-    memset(wireChanBindings, 0, sizeof(*wireChanBindings));
-
-    if (!CTX_IS_INITIATOR(ctx)) {
-        assert(inputToken != GSS_C_NO_BUFFER);
-
-        tokenHeaderLength = ITOK_HEADER_LENGTH + inputToken->length +
-            2 + ctx->mechanismUsed->length + 2;
-        assert(ctx->conversation.length > tokenHeaderLength);
-    }
-
-    wireData->length = ctx->conversation.length - tokenHeaderLength;
-
-    if (userChanBindings != GSS_C_NO_CHANNEL_BINDINGS)
-        wireData->length += userChanBindings->application_data.length;
-
-    wireData->value = GSSEAP_MALLOC(wireData->length);
-    if (wireData->value == NULL) {
-        *minor = ENOMEM;
-        return GSS_S_FAILURE;
-    }
-
-    p = (unsigned char *)wireData->value;
-
-    memcpy(p, ctx->conversation.value, ctx->conversation.length - tokenHeaderLength);
-    p += ctx->conversation.length - tokenHeaderLength;
-
-    if (userChanBindings != GSS_C_NO_CHANNEL_BINDINGS) {
-        memcpy(p, userChanBindings->application_data.value,
-               userChanBindings->application_data.length);
-        p += userChanBindings->application_data.length;
     }
 
     *minor = 0;
