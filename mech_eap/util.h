@@ -208,10 +208,14 @@ gssEapContextTime(OM_uint32 *minor,
                   OM_uint32 *time_rec);
 
 OM_uint32
-gssEapDisplayName(OM_uint32 *minor,
-                  gss_name_t name,
-                  gss_buffer_t output_name_buffer,
-                  gss_OID *output_name_type);
+gssEapGetConversationMIC(OM_uint32 *minor,
+                         gss_ctx_id_t ctx,
+                         gss_buffer_t convMIC);
+
+OM_uint32
+gssEapVerifyConversationMIC(OM_uint32 *minor,
+                            gss_ctx_id_t ctx,
+                            const gss_buffer_t convMIC);
 
 /* util_cred.c */
 OM_uint32 gssEapAllocCred(OM_uint32 *minor, gss_cred_id_t *pCred);
@@ -478,6 +482,12 @@ OM_uint32
 gssEapDuplicateName(OM_uint32 *minor,
                     const gss_name_t input_name,
                     gss_name_t *dest_name);
+
+OM_uint32
+gssEapDisplayName(OM_uint32 *minor,
+                  gss_name_t name,
+                  gss_buffer_t output_name_buffer,
+                  gss_OID *output_name_type);
 
 /* util_oid.c */
 OM_uint32

@@ -311,3 +311,67 @@ gssEapContextTime(OM_uint32 *minor,
 
     return GSS_S_COMPLETE;
 }
+
+OM_uint32
+gssEapGetConversationMIC(OM_uint32 *minor,
+                         gss_ctx_id_t ctx,
+                         gss_buffer_t convMIC)
+{
+    OM_uint32 major;
+    gss_iov_buffer_desc iov[2];
+
+    iov[0].type = GSS_IOV_BUFFER_TYPE_DATA;
+    iov[0].buffer = ctx->conversation;
+
+    iov[1].type = GSS_IOV_BUFFER_TYPE_HEADER | GSS_IOV_BUFFER_FLAG_ALLOCATE;
+    iov[1].buffer.length = 0;
+    iov[1].buffer.value = NULL;
+
+    major = gssEapWrapOrGetMIC(minor, ctx, FALSE, NULL, iov, 2, TOK_TYPE_MIC);
+    if (GSS_ERROR(major))
+        return major;
+
+    *convMIC = iov[1].buffer;
+
+    *minor = 0;
+    return GSS_S_COMPLETE;
+}
+
+OM_uint32
+gssEapVerifyConversationMIC(OM_uint32 *minor,
+                            gss_ctx_id_t ctx,
+                            const gss_buffer_t convMIC)
+{
+    OM_uint32 major;
+    gss_iov_buffer_desc iov[3];
+    int confState;
+    size_t tokenHeaderLength;
+
+    if (convMIC->length < 16) {
+        *minor = GSSEAP_TOK_TRUNC;
+        return GSS_S_BAD_SIG;
+    }
+
+    iov[0].type = GSS_IOV_BUFFER_TYPE_DATA;
+    iov[0].buffer = ctx->conversation;
+
+    /* Back out token header for the next response token. */
+    assert(ctx->mechanismUsed != GSS_C_NO_OID);
+    tokenHeaderLength = 2 + ctx->mechanismUsed->length + 2;
+    assert(ctx->conversation.length > tokenHeaderLength);
+    iov[0].buffer.length -= tokenHeaderLength;
+
+    iov[1].type = GSS_IOV_BUFFER_TYPE_HEADER;
+    iov[1].buffer.length = 16;
+    iov[1].buffer.value = convMIC->value;
+
+    iov[2].type = GSS_IOV_BUFFER_TYPE_TRAILER;
+    iov[2].buffer.length = convMIC->length - 16;
+    iov[2].buffer.value = (unsigned char *)convMIC->value + 16;
+
+    major = gssEapUnwrapOrVerifyMIC(minor, ctx, &confState, NULL,
+                                    iov, 3, TOK_TYPE_MIC);
+
+
+    return major;
+}

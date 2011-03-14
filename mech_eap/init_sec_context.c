@@ -801,18 +801,20 @@ eapGssSmInitReauthCreds(OM_uint32 *minor,
 #endif /* GSSEAP_ENABLE_REAUTH */
 
 static OM_uint32
-eapGssSmInitCompleteInitiatorExts(OM_uint32 *minor,
-                                  gss_cred_id_t cred,
-                                  gss_ctx_id_t ctx,
-                                  gss_name_t target,
-                                  gss_OID mech,
-                                  OM_uint32 reqFlags,
-                                  OM_uint32 timeReq,
-                                  gss_channel_bindings_t chanBindings,
-                                  gss_buffer_t inputToken,
-                                  gss_buffer_t outputToken,
-                                  OM_uint32 *smFlags)
+eapGssSmInitInitiatorMIC(OM_uint32 *minor,
+                         gss_cred_id_t cred,
+                         gss_ctx_id_t ctx,
+                         gss_name_t target,
+                         gss_OID mech,
+                         OM_uint32 reqFlags,
+                         OM_uint32 timeReq,
+                         gss_channel_bindings_t chanBindings,
+                         gss_buffer_t inputToken,
+                         gss_buffer_t outputToken,
+                         OM_uint32 *smFlags)
 {
+    gss_buffer_desc conversation;
+
     GSSEAP_SM_TRANSITION_NEXT(ctx);
 
     *minor = 0;
@@ -904,15 +906,15 @@ static struct gss_eap_sm eapGssInitiatorSm[] = {
         ITOK_TYPE_NONE,
         ITOK_TYPE_GSS_CHANNEL_BINDINGS,
         GSSEAP_STATE_INITIATOR_EXTS,
-        SM_ITOK_FLAG_REQUIRED,
+        0,
         eapGssSmInitGssChannelBindings
     },
     {
         ITOK_TYPE_NONE,
-        ITOK_TYPE_NONE,
+        ITOK_TYPE_INITIATOR_MIC,
         GSSEAP_STATE_INITIATOR_EXTS,
         0,
-        eapGssSmInitCompleteInitiatorExts
+        eapGssSmInitInitiatorMIC
     },
 #ifdef GSSEAP_ENABLE_REAUTH
     {
