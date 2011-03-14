@@ -186,26 +186,10 @@ struct gss_eap_itok_map {
 
 #define ITOK_TYPE_MASK                      (~(ITOK_FLAG_CRITICAL | ITOK_FLAG_VERIFIED))
 
+#define ITOK_HEADER_LENGTH                  8           /* type || length */
+
 OM_uint32 gssEapAllocContext(OM_uint32 *minor, gss_ctx_id_t *pCtx);
 OM_uint32 gssEapReleaseContext(OM_uint32 *minor, gss_ctx_id_t *pCtx);
-
-OM_uint32
-gssEapRecordContextTokenHeader(OM_uint32 *minor,
-                               gss_ctx_id_t ctx,
-                               enum gss_eap_token_type tokType);
-
-OM_uint32
-gssEapRecordInnerContextToken(OM_uint32 *minor,
-                              gss_ctx_id_t ctx,
-                              gss_buffer_t innerToken,
-                              OM_uint32 type);
-
-OM_uint32
-gssEapVerifyContextToken(OM_uint32 *minor,
-                         gss_ctx_id_t ctx,
-                         const gss_buffer_t inputToken,
-                         enum gss_eap_token_type tokenType,
-                         gss_buffer_t innerInputToken);
 
 OM_uint32
 gssEapContextTime(OM_uint32 *minor,
@@ -221,26 +205,6 @@ OM_uint32
 gssEapVerifyConversationMIC(OM_uint32 *minor,
                             gss_ctx_id_t ctx,
                             const gss_buffer_t convMIC);
-
-OM_uint32
-gssEapEncodeExtensions(OM_uint32 *minor,
-                       OM_uint32 *types,
-                       size_t typesCount,
-                       gss_buffer_t outputToken);
-
-OM_uint32
-gssEapProcessExtensions(OM_uint32 *minor,
-                        gss_buffer_t inputToken,
-                        struct gss_eap_itok_map *map,
-                        size_t mapCount,
-                        OM_uint32 *flags);
-
-OM_uint32
-gssEapMakeTokenChannelBindings(OM_uint32 *minor,
-                               gss_ctx_id_t ctx,
-                               gss_channel_bindings_t userBindings,
-                               gss_buffer_t inputToken,
-                               gss_channel_bindings_t wireBindings);
 
 /* util_cred.c */
 OM_uint32 gssEapAllocCred(OM_uint32 *minor, gss_cred_id_t *pCred);
@@ -650,15 +614,49 @@ gssEapSmTransition(gss_ctx_id_t ctx, enum gss_eap_state state);
 
 /* util_token.c */
 OM_uint32
-gssEapEncodeInnerTokens(OM_uint32 *minor,
-                        gss_buffer_set_t extensions,
-                        OM_uint32 *types,
-                        gss_buffer_t buffer);
-OM_uint32
 gssEapDecodeInnerTokens(OM_uint32 *minor,
                         const gss_buffer_t buffer,
                         gss_buffer_set_t *pExtensions,
                         OM_uint32 **pTypes);
+
+OM_uint32
+gssEapRecordContextTokenHeader(OM_uint32 *minor,
+                               gss_ctx_id_t ctx,
+                               enum gss_eap_token_type tokType);
+
+OM_uint32
+gssEapRecordInnerContextToken(OM_uint32 *minor,
+                              gss_ctx_id_t ctx,
+                              gss_buffer_t innerToken,
+                              OM_uint32 type);
+
+OM_uint32
+gssEapVerifyContextToken(OM_uint32 *minor,
+                         gss_ctx_id_t ctx,
+                         const gss_buffer_t inputToken,
+                         enum gss_eap_token_type tokenType,
+                         gss_buffer_t innerInputToken);
+
+OM_uint32
+gssEapEncodeSupportedExts(OM_uint32 *minor,
+                          OM_uint32 *types,
+                          size_t typesCount,
+                          gss_buffer_t outputToken);
+
+OM_uint32
+gssEapProcessSupportedExts(OM_uint32 *minor,
+                           gss_buffer_t inputToken,
+                           struct gss_eap_itok_map *map,
+                           size_t mapCount,
+                           OM_uint32 *flags);
+
+OM_uint32
+gssEapMakeTokenChannelBindings(OM_uint32 *minor,
+                               gss_ctx_id_t ctx,
+                               gss_channel_bindings_t userBindings,
+                               gss_buffer_t inputToken,
+                               gss_channel_bindings_t wireBindings);
+
 
 size_t
 tokenSize(size_t bodySize);

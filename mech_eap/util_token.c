@@ -58,72 +58,6 @@
 #include "gssapiP_eap.h"
 
 OM_uint32
-gssEapEncodeInnerTokens(OM_uint32 *minor,
-                        gss_buffer_set_t extensions,
-                        OM_uint32 *types,
-                        gss_buffer_t buffer)
-{
-    OM_uint32 major, tmpMinor;
-    size_t required = 0, i;
-    unsigned char *p;
-
-    buffer->value = NULL;
-    buffer->length = 0;
-
-    if (extensions != GSS_C_NO_BUFFER_SET) {
-        for (i = 0; i < extensions->count; i++) {
-            required += 8 + extensions->elements[i].length;
-        }
-    }
-
-    /*
-     * We must always return a non-NULL token otherwise the calling state
-     * machine assumes we are finished. Hence care in case malloc(0) does
-     * return NULL.
-     */
-    buffer->value = GSSEAP_MALLOC(required ? required : 1);
-    if (buffer->value == NULL) {
-        major = GSS_S_FAILURE;
-        *minor = ENOMEM;
-        goto cleanup;
-    }
-
-    buffer->length = required;
-    p = (unsigned char *)buffer->value;
-
-    if (extensions != GSS_C_NO_BUFFER_SET) {
-        for (i = 0; i < extensions->count; i++) {
-            gss_buffer_t extension = &extensions->elements[i];
-
-            assert((types[i] & ITOK_FLAG_VERIFIED) == 0); /* private flag */
-
-             /*
-              * Extensions are encoded as type-length-value, where the upper
-              * bit of the type indicates criticality.
-              */
-            store_uint32_be(types[i], &p[0]);
-            store_uint32_be(extension->length, &p[4]);
-            memcpy(&p[8], extension->value, extension->length);
-
-            p += 8 + extension->length;
-        }
-    }
-
-    assert(p == (unsigned char *)buffer->value + required);
-    assert(buffer->value != NULL);
-
-    major = GSS_S_COMPLETE;
-    *minor = 0;
-
-cleanup:
-    if (GSS_ERROR(major)) {
-        gss_release_buffer(&tmpMinor, buffer);
-    }
-
-    return major;
-}
-
-OM_uint32
 gssEapDecodeInnerTokens(OM_uint32 *minor,
                         const gss_buffer_t buffer,
                         gss_buffer_set_t *pExtensions,
@@ -172,7 +106,7 @@ gssEapDecodeInnerTokens(OM_uint32 *minor,
         types[extensions->count] = load_uint32_be(&p[0]);
         extension.length = load_uint32_be(&p[4]);
 
-        if (remain < 8 + extension.length) {
+        if (remain < ITOK_HEADER_LENGTH + extension.length) {
             major = GSS_S_DEFECTIVE_TOKEN;
             *minor = GSSEAP_TOK_TRUNC;
             goto cleanup;
@@ -183,8 +117,8 @@ gssEapDecodeInnerTokens(OM_uint32 *minor,
         if (GSS_ERROR(major))
             goto cleanup;
 
-        p      += 8 + extension.length;
-        remain -= 8 + extension.length;
+        p      += ITOK_HEADER_LENGTH + extension.length;
+        remain -= ITOK_HEADER_LENGTH + extension.length;
     } while (remain != 0);
 
 cleanup:
@@ -198,6 +132,282 @@ cleanup:
     }
 
     return major;
+}
+
+static OM_uint32
+recordTokens(OM_uint32 *minor,
+             gss_ctx_id_t ctx,
+             gss_buffer_t tokens,
+             size_t tokensCount)
+{
+    unsigned char *buf;
+    size_t i, size, offset;
+
+    size = ctx->conversation.length;
+
+    for (i = 0; i < tokensCount; i++)
+        size += tokens[i].length;
+
+    buf = GSSEAP_REALLOC(ctx->conversation.value, size);
+    if (buf == NULL) {
+        *minor = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+
+    offset = ctx->conversation.length;
+
+    ctx->conversation.length = size;
+    ctx->conversation.value = buf;
+
+    for (i = 0; i < tokensCount; i++) {
+        memcpy(buf + offset, tokens[i].value, tokens[i].length);
+        offset += tokens[i].length;
+    }
+
+    *minor = 0;
+    return GSS_S_COMPLETE;
+}
+
+OM_uint32
+gssEapRecordContextTokenHeader(OM_uint32 *minor,
+                               gss_ctx_id_t ctx,
+                               enum gss_eap_token_type tokType)
+{
+    unsigned char wireOidHeader[2], wireTokType[2];
+    gss_buffer_desc buffers[3];
+
+    assert(ctx->mechanismUsed != GSS_C_NO_OID);
+
+    wireOidHeader[0] = 0x06;
+    wireOidHeader[1] = ctx->mechanismUsed->length;
+    buffers[0].length = sizeof(wireOidHeader);
+    buffers[0].value  = wireOidHeader;
+
+    buffers[1].length = ctx->mechanismUsed->length;
+    buffers[1].value  = ctx->mechanismUsed->elements;
+
+    store_uint16_be(tokType, wireTokType);
+    buffers[2].length = sizeof(wireTokType);
+    buffers[2].value = wireTokType;
+
+    return recordTokens(minor, ctx, buffers, sizeof(buffers)/sizeof(buffers[0]));
+}
+
+OM_uint32
+gssEapRecordInnerContextToken(OM_uint32 *minor,
+                              gss_ctx_id_t ctx,
+                              gss_buffer_t innerToken,
+                              OM_uint32 itokType)
+{
+    gss_buffer_desc buffers[2];
+    unsigned char itokHeader[ITOK_HEADER_LENGTH];
+
+    assert(innerToken != GSS_C_NO_BUFFER);
+
+    store_uint32_be(itokType,           &itokHeader[0]);
+    store_uint32_be(innerToken->length, &itokHeader[4]);
+    buffers[0].length = sizeof(itokHeader);
+    buffers[0].value  = itokHeader;
+
+    buffers[1] = *innerToken;
+
+    return recordTokens(minor, ctx, buffers, sizeof(buffers)/sizeof(buffers[0]));
+}
+
+OM_uint32
+gssEapVerifyContextToken(OM_uint32 *minor,
+                         gss_ctx_id_t ctx,
+                         const gss_buffer_t inputToken,
+                         enum gss_eap_token_type tokType,
+                         gss_buffer_t innerInputToken)
+{
+    OM_uint32 major;
+    size_t bodySize;
+    unsigned char *p = (unsigned char *)inputToken->value;
+    gss_OID_desc oidBuf;
+    gss_OID oid;
+    enum gss_eap_token_type actualTokType;
+    gss_buffer_desc tokenBuf;
+
+    if (ctx->mechanismUsed != GSS_C_NO_OID) {
+        oid = ctx->mechanismUsed;
+    } else {
+        oidBuf.elements = NULL;
+        oidBuf.length = 0;
+        oid = &oidBuf;
+    }
+
+    major = verifyTokenHeader(minor, oid, &bodySize, &p,
+                              inputToken->length, &actualTokType);
+    if (GSS_ERROR(major))
+        return major;
+
+    if (actualTokType != tokType) {
+        *minor = GSSEAP_WRONG_TOK_ID;
+        return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    if (ctx->mechanismUsed == GSS_C_NO_OID) {
+        if (!gssEapIsConcreteMechanismOid(oid)) {
+            *minor = GSSEAP_WRONG_MECH;
+            return GSS_S_BAD_MECH;
+        }
+
+        if (!gssEapInternalizeOid(oid, &ctx->mechanismUsed)) {
+            major = duplicateOid(minor, oid, &ctx->mechanismUsed);
+            if (GSS_ERROR(major))
+                return major;
+        }
+    }
+
+    innerInputToken->length = bodySize;
+    innerInputToken->value = p;
+
+    /*
+     * Add OID, tokenType, body to conversation; variable length
+     * header omitted. A better API to verifyTokenHeader would
+     * avoid this ugly pointer arithmetic. XXX FIXME
+     */
+    tokenBuf.value = p - (2 + oid->length + 2);
+    tokenBuf.length = 2 + oid->length + 2 + bodySize;
+
+    major = recordTokens(minor, ctx, &tokenBuf, 1);
+    if (GSS_ERROR(major))
+        return major;
+
+    *minor = 0;
+    return GSS_S_COMPLETE;
+}
+
+OM_uint32
+gssEapContextTime(OM_uint32 *minor,
+                  gss_ctx_id_t context_handle,
+                  OM_uint32 *time_rec)
+{
+    if (context_handle->expiryTime == 0) {
+        *time_rec = GSS_C_INDEFINITE;
+    } else {
+        time_t now, lifetime;
+
+        time(&now);
+        lifetime = context_handle->expiryTime - now;
+        if (lifetime <= 0) {
+            *time_rec = 0;
+            return GSS_S_CONTEXT_EXPIRED;
+        }
+        *time_rec = lifetime;
+    }
+
+    return GSS_S_COMPLETE;
+}
+
+OM_uint32
+gssEapEncodeSupportedExts(OM_uint32 *minor,
+                          OM_uint32 *types,
+                          size_t typesCount,
+                          gss_buffer_t outputToken)
+{
+    size_t i;
+    unsigned char *p;
+
+    outputToken->value = GSSEAP_MALLOC(4 * typesCount);
+    if (outputToken->value == NULL) {
+        *minor = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+    p = (unsigned char *)outputToken->value;
+
+    outputToken->length = 4 * typesCount;
+
+    for (i = 0; i < typesCount; i++) {
+        store_uint32_be(types[i], p);
+        p += 4;
+    }
+
+    *minor = 0;
+    return GSS_S_COMPLETE;
+}
+
+OM_uint32
+gssEapProcessSupportedExts(OM_uint32 *minor,
+                           gss_buffer_t inputToken,
+                           struct gss_eap_itok_map *map,
+                           size_t mapCount,
+                           OM_uint32 *flags)
+{
+    size_t i;
+    unsigned char *p;
+
+    if ((inputToken->length % 4) != 0) {
+        *minor = GSSEAP_TOK_TRUNC;
+        return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    p = (unsigned char *)inputToken->value;
+
+    for (i = 0; i < inputToken->length / 4; i++) {
+        OM_uint32 type = load_uint32_be(p);
+        size_t j;
+
+        for (j = 0; j < mapCount; j++) {
+            if (map->type == type) {
+                *flags |= map->flag;
+                break;
+            }
+        }
+
+        p += 4;
+    }
+
+    *minor = 0;
+    return GSS_S_COMPLETE;
+}
+
+OM_uint32
+gssEapMakeTokenChannelBindings(OM_uint32 *minor,
+                               gss_ctx_id_t ctx,
+                               gss_channel_bindings_t userChanBindings,
+                               gss_buffer_t inputToken,
+                               gss_channel_bindings_t wireChanBindings)
+{
+    gss_buffer_t wireData = &wireChanBindings->application_data;
+    unsigned char *p;
+    size_t tokenHeaderLength = 0;
+
+    memset(wireChanBindings, 0, sizeof(*wireChanBindings));
+
+    if (!CTX_IS_INITIATOR(ctx)) {
+        assert(inputToken != GSS_C_NO_BUFFER);
+
+        tokenHeaderLength = ITOK_HEADER_LENGTH + inputToken->length +
+            2 + ctx->mechanismUsed->length + 2;
+        assert(ctx->conversation.length > tokenHeaderLength);
+    }
+
+    wireData->length = ctx->conversation.length - tokenHeaderLength;
+
+    if (userChanBindings != GSS_C_NO_CHANNEL_BINDINGS)
+        wireData->length += userChanBindings->application_data.length;
+
+    wireData->value = GSSEAP_MALLOC(wireData->length);
+    if (wireData->value == NULL) {
+        *minor = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+
+    p = (unsigned char *)wireData->value;
+
+    memcpy(p, ctx->conversation.value, ctx->conversation.length - tokenHeaderLength);
+    p += ctx->conversation.length - tokenHeaderLength;
+
+    if (userChanBindings != GSS_C_NO_CHANNEL_BINDINGS) {
+        memcpy(p, userChanBindings->application_data.value,
+               userChanBindings->application_data.length);
+        p += userChanBindings->application_data.length;
+    }
+
+    *minor = 0;
+    return GSS_S_COMPLETE;
 }
 
 /*

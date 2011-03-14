@@ -148,19 +148,19 @@ eapGssSmAcceptExts(OM_uint32 *minor,
 {
     OM_uint32 major;
 
-    major = gssEapProcessExtensions(minor, inputToken,
-                                    gssEapAcceptorExtsFlagMap,
-                                    sizeof(gssEapAcceptorExtsFlagMap) /
-                                        sizeof(gssEapAcceptorExtsFlagMap[0]),
-                                    &ctx->flags);
+    major = gssEapProcessSupportedExts(minor, inputToken,
+                                       gssEapAcceptorExtsFlagMap,
+                                        sizeof(gssEapAcceptorExtsFlagMap) /
+                                       sizeof(gssEapAcceptorExtsFlagMap[0]),
+                                       &ctx->flags);
     if (GSS_ERROR(major))
         return major;
 
-    major = gssEapEncodeExtensions(minor,
-                                   gssEapSupportedInitiatorExts,
-                                   sizeof(gssEapSupportedInitiatorExts) /
+    major = gssEapEncodeSupportedExts(minor,
+                                      gssEapSupportedInitiatorExts,
+                                      sizeof(gssEapSupportedInitiatorExts) /
                                         sizeof(gssEapSupportedInitiatorExts[0]),
-                                   outputToken);
+                                      outputToken);
     if (GSS_ERROR(major))
         return major;
 

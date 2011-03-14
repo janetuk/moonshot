@@ -598,17 +598,17 @@ eapGssSmInitExts(OM_uint32 *minor,
     OM_uint32 major;
 
     if (GSSEAP_SM_STATE(ctx) == GSSEAP_STATE_INITIAL) {
-        major = gssEapEncodeExtensions(minor,
-                                       gssEapSupportedAcceptorExts,
-                                       sizeof(gssEapSupportedAcceptorExts) /
+        major = gssEapEncodeSupportedExts(minor,
+                                          gssEapSupportedAcceptorExts,
+                                          sizeof(gssEapSupportedAcceptorExts) /
                                             sizeof(gssEapSupportedAcceptorExts[0]),
-                                       outputToken);
+                                          outputToken);
     } else if (inputToken != GSS_C_NO_BUFFER) {
-        major = gssEapProcessExtensions(minor, inputToken,
-                                        gssEapInitiatorExtsFlagMap,
-                                        sizeof(gssEapInitiatorExtsFlagMap) /
+        major = gssEapProcessSupportedExts(minor, inputToken,
+                                          gssEapInitiatorExtsFlagMap,
+                                          sizeof(gssEapInitiatorExtsFlagMap) /
                                             sizeof(gssEapInitiatorExtsFlagMap[0]),
-                                        &ctx->flags);
+                                          &ctx->flags);
     }
 
     if (GSS_ERROR(major))
