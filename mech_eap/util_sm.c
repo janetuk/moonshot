@@ -95,20 +95,15 @@ gssEapSmTransition(gss_ctx_id_t ctx, enum gss_eap_state state)
 #endif /* GSSEAP_DEBUG */
 
 static OM_uint32
-makeErrorToken(OM_uint32 *minor,
-               OM_uint32 majorStatus,
-               OM_uint32 minorStatus,
-               gss_buffer_set_t *outputToken)
+recordErrorToken(OM_uint32 *minor,
+                 gss_ctx_id_t ctx,
+                 OM_uint32 majorStatus,
+                 OM_uint32 minorStatus)
 {
-    OM_uint32 major;
     unsigned char errorData[8];
     gss_buffer_desc errorBuffer;
 
     assert(GSS_ERROR(majorStatus));
-
-    major = gss_create_empty_buffer_set(minor, outputToken);
-    if (GSS_ERROR(major))
-        return major;
 
     /*
      * Only return error codes that the initiator could have caused,
@@ -130,61 +125,39 @@ makeErrorToken(OM_uint32 *minor,
     errorBuffer.length = sizeof(errorData);
     errorBuffer.value = errorData;
 
-    major = gss_add_buffer_set_member(minor, &errorBuffer, outputToken);
-    if (GSS_ERROR(major))
-        return major;
-
-    return GSS_S_COMPLETE;
+    return gssEapRecordInnerContextToken(minor, ctx, &errorBuffer, 
+                                         ITOK_TYPE_CONTEXT_ERR | ITOK_FLAG_CRITICAL);
 }
 
 static OM_uint32
-allocInnerTokens(OM_uint32 *minor,
-                 size_t count,
-                 gss_buffer_set_t *pTokens,
-                 OM_uint32 **pTokenTypes)
+makeContextToken(OM_uint32 *minor,
+                 gss_ctx_id_t ctx,
+                 size_t headerOffset,
+                 gss_buffer_t outputToken)
 {
-    OM_uint32 major, tmpMinor;
-    gss_buffer_set_t tokens = GSS_C_NO_BUFFER_SET;
-    OM_uint32 *tokenTypes = NULL;
+    size_t tokSize, bodySize;
+    unsigned char *p;
 
-    major = gss_create_empty_buffer_set(minor, &tokens);
-    if (GSS_ERROR(major))
-        goto cleanup;
+    assert(ctx->conversation.length > headerOffset);
 
-    assert(tokens->count == 0);
-    assert(tokens->elements == NULL);
+    bodySize = ctx->conversation.length - headerOffset;
+    tokSize = tokenSize(bodySize);
 
-    tokens->elements = (gss_buffer_desc *)GSSEAP_CALLOC(count, sizeof(gss_buffer_desc));
-    if (tokens->elements == NULL) {
-        major = GSS_S_FAILURE;
+    outputToken->value = GSSEAP_MALLOC(tokSize);
+    if (outputToken->value == NULL) {
         *minor = ENOMEM;
-        goto cleanup;
+        return GSS_S_FAILURE;
     }
 
-    tokenTypes = (OM_uint32 *)GSSEAP_CALLOC(count, sizeof(OM_uint32));
-    if (tokenTypes == NULL) {
-        major = GSS_S_FAILURE;
-        *minor = ENOMEM;
-        goto cleanup;
-    }
+    outputToken->length = tokSize;
 
-    major = GSS_S_COMPLETE;
+    p = (unsigned char *)outputToken->value;
+
+    makeTokenHeader(bodySize, &p);
+    memcpy(p, (unsigned char *)ctx->conversation.value + headerOffset, bodySize);
+
     *minor = 0;
-
-cleanup:
-    if (GSS_ERROR(major)) {
-        gss_release_buffer_set(&tmpMinor, &tokens);
-        tokens = GSS_C_NO_BUFFER_SET;
-        if (tokenTypes != NULL) {
-            GSSEAP_FREE(tokenTypes);
-            tokenTypes = NULL;
-        }
-    }
-
-    *pTokens = tokens;
-    *pTokenTypes = tokenTypes;
-
-    return major;
+    return GSS_S_COMPLETE;
 }
 
 OM_uint32
@@ -205,12 +178,13 @@ gssEapSmStep(OM_uint32 *minor,
     gss_buffer_desc unwrappedInputToken = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc unwrappedOutputToken = GSS_C_EMPTY_BUFFER;
     gss_buffer_set_t innerInputTokens = GSS_C_NO_BUFFER_SET;
-    gss_buffer_set_t innerOutputTokens = GSS_C_NO_BUFFER_SET;
     OM_uint32 *inputTokenTypes = NULL, *outputTokenTypes = NULL;
     unsigned int smFlags = 0;
     size_t i, j;
     int initialContextToken = 0;
     enum gss_eap_token_type tokType;
+    size_t headerOffset, firstTokenOffset;
+    size_t innerOutputTokenCount = 0;
 
     assert(smCount > 0);
 
@@ -220,17 +194,13 @@ gssEapSmStep(OM_uint32 *minor,
     outputToken->value = NULL;
 
     if (inputToken != GSS_C_NO_BUFFER && inputToken->length != 0) {
-        major = gssEapVerifyToken(minor, ctx, inputToken, &tokType,
-                                  &unwrappedInputToken);
+        tokType = CTX_IS_INITIATOR(ctx) ?
+            TOK_TYPE_ACCEPTOR_CONTEXT : TOK_TYPE_INITIATOR_CONTEXT;
+
+        major = gssEapVerifyContextToken(minor, ctx, inputToken, tokType,
+                                         &unwrappedInputToken);
         if (GSS_ERROR(major))
             goto cleanup;
-
-        if (tokType != (CTX_IS_INITIATOR(ctx)
-                    ? TOK_TYPE_ACCEPTOR_CONTEXT : TOK_TYPE_INITIATOR_CONTEXT)) {
-            major = GSS_S_DEFECTIVE_TOKEN;
-            *minor = GSSEAP_WRONG_TOK_ID;
-            goto cleanup;
-        }
     } else if (!CTX_IS_INITIATOR(ctx) || ctx->state != GSSEAP_STATE_INITIAL) {
         major = GSS_S_DEFECTIVE_TOKEN;
         *minor = GSSEAP_WRONG_SIZE;
@@ -252,11 +222,19 @@ gssEapSmStep(OM_uint32 *minor,
     if (GSS_ERROR(major))
         goto cleanup;
 
+    headerOffset = ctx->conversation.length;
+
     assert(innerInputTokens != GSS_C_NO_BUFFER_SET);
 
-    major = allocInnerTokens(minor, smCount, &innerOutputTokens, &outputTokenTypes);
+    /* Get ready to emit an output token */
+    tokType = CTX_IS_INITIATOR(ctx) ?
+        TOK_TYPE_INITIATOR_CONTEXT : TOK_TYPE_ACCEPTOR_CONTEXT;
+
+    major = gssEapRecordContextTokenHeader(minor, ctx, tokType);
     if (GSS_ERROR(major))
         goto cleanup;
+
+    firstTokenOffset = ctx->conversation.length;
 
     /* Process all the tokens that are valid for the current state. */
     for (i = 0; i < smCount; i++) {
@@ -321,18 +299,30 @@ gssEapSmStep(OM_uint32 *minor,
                 smFlags |= SM_FLAG_TRANSITED;
 
             if (innerOutputToken.value != NULL) {
-                innerOutputTokens->elements[innerOutputTokens->count] = innerOutputToken;
-                assert(smp->outputTokenType != ITOK_TYPE_NONE);
-                outputTokenTypes[innerOutputTokens->count] = smp->outputTokenType;
+                OM_uint32 outputTokenType = smp->outputTokenType;
+
                 if (smFlags & SM_FLAG_OUTPUT_TOKEN_CRITICAL)
-                    outputTokenTypes[innerOutputTokens->count] |= ITOK_FLAG_CRITICAL;
-                innerOutputTokens->count++;
+                    outputTokenType |= ITOK_FLAG_CRITICAL;
+
+                assert(smp->outputTokenType != ITOK_TYPE_NONE);
+
+                tmpMajor = gssEapRecordInnerContextToken(&tmpMinor, ctx,
+                                                         &innerOutputToken,
+                                                         outputTokenType);
+                if (GSS_ERROR(tmpMajor)) {
+                    major = tmpMajor;
+                    *minor = tmpMinor;
+                    break;
+                }
+
+                innerOutputTokenCount++;
             }
+
             /*
              * Break out if we made a state transition and have some tokens to send.
              */
             if ((smFlags & SM_FLAG_TRANSITED) &&
-                 ((smFlags & SM_FLAG_FORCE_SEND_TOKEN) || innerOutputTokens->count != 0)) {
+                 ((smFlags & SM_FLAG_FORCE_SEND_TOKEN) || innerOutputTokenCount != 0)) {
                 SM_ASSERT_VALID(ctx, major);
                 break;
             }
@@ -344,8 +334,6 @@ gssEapSmStep(OM_uint32 *minor,
             break;
         }
     }
-
-    assert(innerOutputTokens->count <= smCount);
 
     /* Check we understood all critical tokens sent by peer */
     if (!GSS_ERROR(major)) {
@@ -365,38 +353,27 @@ gssEapSmStep(OM_uint32 *minor,
             goto cleanup; /* return error directly to caller */
 
         /* replace any emitted tokens with error token */
-        gss_release_buffer_set(&tmpMinor, &innerOutputTokens);
+        ctx->conversation.length = firstTokenOffset;
 
-        tmpMajor = makeErrorToken(&tmpMinor, major, *minor, &innerOutputTokens);
+        tmpMajor = recordErrorToken(&tmpMinor, ctx, major, *minor);
         if (GSS_ERROR(tmpMajor)) {
             major = tmpMajor;
             *minor = tmpMinor;
             goto cleanup;
         }
 
-        if (innerOutputTokens->count != 0)
-            outputTokenTypes[0] = ITOK_TYPE_CONTEXT_ERR | ITOK_FLAG_CRITICAL;
+        innerOutputTokenCount = 1;
     }
 
     /* Format output token from inner tokens */
-    if (innerOutputTokens->count != 0 ||            /* inner tokens to send */
+    if (innerOutputTokenCount != 0 ||               /* inner tokens to send */
         !CTX_IS_INITIATOR(ctx) ||                   /* any leg acceptor */
         !CTX_IS_ESTABLISHED(ctx)) {                 /* non-last leg initiator */
-        tmpMajor = gssEapEncodeInnerTokens(&tmpMinor, innerOutputTokens,
-                                           outputTokenTypes, &unwrappedOutputToken);
-        if (tmpMajor == GSS_S_COMPLETE) {
-            if (CTX_IS_INITIATOR(ctx))
-                tokType = TOK_TYPE_INITIATOR_CONTEXT;
-            else
-                tokType = TOK_TYPE_ACCEPTOR_CONTEXT;
-
-            tmpMajor = gssEapMakeToken(&tmpMinor, ctx, &unwrappedOutputToken,
-                                       tokType, outputToken);
-            if (GSS_ERROR(tmpMajor)) {
-                major = tmpMajor;
-                *minor = tmpMinor;
-                goto cleanup;
-            }
+        tmpMajor = makeContextToken(&tmpMinor, ctx, headerOffset, outputToken);
+        if (GSS_ERROR(tmpMajor)) {
+            major = tmpMajor;
+            *minor = tmpMinor;
+            goto cleanup;
         }
     }
 
@@ -407,7 +384,6 @@ gssEapSmStep(OM_uint32 *minor,
 
 cleanup:
     gss_release_buffer_set(&tmpMinor, &innerInputTokens);
-    gss_release_buffer_set(&tmpMinor, &innerOutputTokens);
     if (inputTokenTypes != NULL)
         GSSEAP_FREE(inputTokenTypes);
     if (outputTokenTypes != NULL)

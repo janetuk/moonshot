@@ -185,18 +185,22 @@ OM_uint32 gssEapAllocContext(OM_uint32 *minor, gss_ctx_id_t *pCtx);
 OM_uint32 gssEapReleaseContext(OM_uint32 *minor, gss_ctx_id_t *pCtx);
 
 OM_uint32
-gssEapMakeToken(OM_uint32 *minor,
-                gss_ctx_id_t ctx,
-                const gss_buffer_t innerToken,
-                enum gss_eap_token_type tokenType,
-                gss_buffer_t outputToken);
+gssEapRecordContextTokenHeader(OM_uint32 *minor,
+                               gss_ctx_id_t ctx,
+                               enum gss_eap_token_type tokType);
 
 OM_uint32
-gssEapVerifyToken(OM_uint32 *minor,
-                  gss_ctx_id_t ctx,
-                  const gss_buffer_t inputToken,
-                  enum gss_eap_token_type *tokenType,
-                  gss_buffer_t innerInputToken);
+gssEapRecordInnerContextToken(OM_uint32 *minor,
+                              gss_ctx_id_t ctx,
+                              gss_buffer_t innerToken,
+                              OM_uint32 type);
+
+OM_uint32
+gssEapVerifyContextToken(OM_uint32 *minor,
+                         gss_ctx_id_t ctx,
+                         const gss_buffer_t inputToken,
+                         enum gss_eap_token_type tokenType,
+                         gss_buffer_t innerInputToken);
 
 OM_uint32
 gssEapContextTime(OM_uint32 *minor,
@@ -622,13 +626,11 @@ gssEapDecodeInnerTokens(OM_uint32 *minor,
                         OM_uint32 **pTypes);
 
 size_t
-tokenSize(const gss_OID_desc *mech, size_t body_size);
+tokenSize(size_t bodySize);
 
 void
-makeTokenHeader(const gss_OID_desc *mech,
-                size_t body_size,
-                unsigned char **buf,
-                enum gss_eap_token_type tok_type);
+makeTokenHeader(size_t body_size,
+                unsigned char **buf);
 
 OM_uint32
 verifyTokenHeader(OM_uint32 *minor,

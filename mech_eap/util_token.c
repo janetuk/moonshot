@@ -305,12 +305,8 @@ der_read_length(unsigned char **buf, ssize_t *bufsize)
 /* returns the length of a token, given the mech oid and the body size */
 
 size_t
-tokenSize(const gss_OID_desc *mech, size_t body_size)
+tokenSize(size_t body_size)
 {
-    assert(mech != GSS_C_NO_OID);
-
-    /* set body_size to sequence contents size */
-    body_size += 4 + (size_t) mech->length;         /* NEED overflow check */
     return 1 + der_length_size(body_size) + body_size;
 }
 
@@ -319,20 +315,11 @@ tokenSize(const gss_OID_desc *mech, size_t body_size)
 
 void
 makeTokenHeader(
-    const gss_OID_desc *mech,
     size_t body_size,
-    unsigned char **buf,
-    enum gss_eap_token_type tok_type)
+    unsigned char **buf)
 {
     *(*buf)++ = 0x60;
-    der_write_length(buf, (tok_type == -1) ?2:4 + mech->length + body_size);
-    *(*buf)++ = 0x06;
-    *(*buf)++ = (unsigned char)mech->length;
-    memcpy(*buf, mech->elements, mech->length);
-    *buf += mech->length;
-    assert(tok_type != TOK_TYPE_NONE);
-    *(*buf)++ = (unsigned char)((tok_type>>8) & 0xff);
-    *(*buf)++ = (unsigned char)(tok_type & 0xff);
+    der_write_length(buf, body_size);
 }
 
 /*

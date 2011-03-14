@@ -201,6 +201,7 @@ struct gss_ctx_id_struct
         #define kerberosCtx          ctxU.kerberos
 #endif
     } ctxU;
+    gss_buffer_desc conversation;
 };
 
 #define TOK_FLAG_SENDER_IS_ACCEPTOR         0x01

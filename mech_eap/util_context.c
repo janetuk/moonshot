@@ -130,6 +130,7 @@ gssEapReleaseContext(OM_uint32 *minor,
     gssEapReleaseOid(&tmpMinor, &ctx->mechanismUsed);
     sequenceFree(&tmpMinor, &ctx->seqState);
     gssEapReleaseCred(&tmpMinor, &ctx->defaultCred);
+    gss_release_buffer(&tmpMinor, &ctx->conversation);
 
     GSSEAP_MUTEX_DESTROY(&ctx->mutex);
 
@@ -141,42 +142,103 @@ gssEapReleaseContext(OM_uint32 *minor,
     return GSS_S_COMPLETE;
 }
 
-OM_uint32
-gssEapMakeToken(OM_uint32 *minor,
-                gss_ctx_id_t ctx,
-                const gss_buffer_t innerToken,
-                enum gss_eap_token_type tokenType,
-                gss_buffer_t outputToken)
+static OM_uint32
+recordTokens(OM_uint32 *minor,
+             gss_ctx_id_t ctx,
+             gss_buffer_t tokens,
+             size_t tokensCount)
 {
-    unsigned char *p;
+    unsigned char *buf;
+    size_t i, size, offset;
 
-    outputToken->length = tokenSize(ctx->mechanismUsed, innerToken->length);
-    outputToken->value = GSSEAP_MALLOC(outputToken->length);
-    if (outputToken->value == NULL) {
+    size = ctx->conversation.length;
+
+    for (i = 0; i < tokensCount; i++)
+        size += tokens[i].length;
+
+    buf = GSSEAP_REALLOC(ctx->conversation.value, size);
+    if (buf == NULL) {
         *minor = ENOMEM;
         return GSS_S_FAILURE;
     }
 
-    p = (unsigned char *)outputToken->value;
-    makeTokenHeader(ctx->mechanismUsed, innerToken->length, &p, tokenType);
-    memcpy(p, innerToken->value, innerToken->length);
+    offset = ctx->conversation.length;
+
+    ctx->conversation.length = size;
+    ctx->conversation.value = buf;
+
+    for (i = 0; i < tokensCount; i++) {
+        memcpy(buf + offset, tokens[i].value, tokens[i].length);
+        offset += tokens[i].length;
+    }
 
     *minor = 0;
     return GSS_S_COMPLETE;
 }
 
 OM_uint32
-gssEapVerifyToken(OM_uint32 *minor,
-                  gss_ctx_id_t ctx,
-                  const gss_buffer_t inputToken,
-                  enum gss_eap_token_type *actualToken,
-                  gss_buffer_t innerInputToken)
+gssEapRecordContextTokenHeader(OM_uint32 *minor,
+                               gss_ctx_id_t ctx,
+                               enum gss_eap_token_type tokType)
+{
+    unsigned char wireOidHeader[2], wireTokType[2];
+    gss_buffer_desc buffers[3];
+
+    assert(ctx->mechanismUsed != GSS_C_NO_OID);
+
+    wireOidHeader[0] = 0x06;
+    wireOidHeader[1] = ctx->mechanismUsed->length;
+    buffers[0].length = sizeof(wireOidHeader);
+    buffers[0].value  = wireOidHeader;
+
+    buffers[1].length = ctx->mechanismUsed->length;
+    buffers[1].value  = ctx->mechanismUsed->elements;
+
+    store_uint16_be(tokType, wireTokType);
+    buffers[2].length = sizeof(wireTokType);
+    buffers[2].value = wireTokType;
+ 
+    return recordTokens(minor, ctx, buffers, sizeof(buffers)/sizeof(buffers[0]));
+}
+
+OM_uint32
+gssEapRecordInnerContextToken(OM_uint32 *minor,
+                              gss_ctx_id_t ctx,
+                              gss_buffer_t innerToken,
+                              OM_uint32 itokType)
+{
+    gss_buffer_desc buffers[3];
+    unsigned char wireItokType[4], wireLength[4];
+
+    assert(innerToken != GSS_C_NO_BUFFER);
+
+    store_uint32_be(itokType, wireItokType);
+    buffers[0].length = sizeof(wireItokType);
+    buffers[0].value  = wireItokType;
+
+    store_uint32_be(innerToken->length, wireLength);
+    buffers[1].length = sizeof(wireLength);
+    buffers[1].value  = wireLength;
+
+    buffers[2] = *innerToken;
+
+    return recordTokens(minor, ctx, buffers, sizeof(buffers)/sizeof(buffers[0]));
+}
+
+OM_uint32
+gssEapVerifyContextToken(OM_uint32 *minor,
+                         gss_ctx_id_t ctx,
+                         const gss_buffer_t inputToken,
+                         enum gss_eap_token_type tokType,
+                         gss_buffer_t innerInputToken)
 {
     OM_uint32 major;
     size_t bodySize;
     unsigned char *p = (unsigned char *)inputToken->value;
     gss_OID_desc oidBuf;
     gss_OID oid;
+    enum gss_eap_token_type actualTokType;
+    gss_buffer_desc tokenBuf;
 
     if (ctx->mechanismUsed != GSS_C_NO_OID) {
         oid = ctx->mechanismUsed;
@@ -187,9 +249,14 @@ gssEapVerifyToken(OM_uint32 *minor,
     }
 
     major = verifyTokenHeader(minor, oid, &bodySize, &p,
-                              inputToken->length, actualToken);
+                              inputToken->length, &actualTokType);
     if (GSS_ERROR(major))
         return major;
+
+    if (actualTokType != tokType) {
+        *minor = GSSEAP_WRONG_TOK_ID;
+        return GSS_S_DEFECTIVE_TOKEN;
+    }
 
     if (ctx->mechanismUsed == GSS_C_NO_OID) {
         if (!gssEapIsConcreteMechanismOid(oid)) {
@@ -206,6 +273,18 @@ gssEapVerifyToken(OM_uint32 *minor,
 
     innerInputToken->length = bodySize;
     innerInputToken->value = p;
+
+    /*
+     * Add OID, tokenType, body to conversation; variable length
+     * header omitted. A better API to verifyTokenHeader would
+     * avoid this ugly pointer arithmetic. XXX FIXME
+     */
+    tokenBuf.value = p - (2 + oid->length + 2);
+    tokenBuf.length = 2 + oid->length + 2 + bodySize;
+
+    major = recordTokens(minor, ctx, &tokenBuf, 1);
+    if (GSS_ERROR(major))
+        return major;
 
     *minor = 0;
     return GSS_S_COMPLETE;
