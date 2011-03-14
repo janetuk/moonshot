@@ -561,11 +561,13 @@ eapGssSmInitAcceptorName(OM_uint32 *minor,
     return GSS_S_CONTINUE_NEEDED;
 }
 
-#if 0
-/* supported inner token types beyond those mandated by specification */
 static OM_uint32
 gssEapSupportedAcceptorExts[] = {
     ITOK_TYPE_REAUTH_CREDS,
+};
+
+static struct gss_eap_itok_map
+gssEapInitiatorExtsFlagMap[] = {
 };
 
 static OM_uint32
@@ -581,30 +583,27 @@ eapGssSmInitExts(OM_uint32 *minor,
                  gss_buffer_t outputToken,
                  OM_uint32 *smFlags)
 {
-    size_t i;
-    unsigned char *p;
+    OM_uint32 major;
 
     if (GSSEAP_SM_STATE(ctx) == GSSEAP_STATE_INITIAL) {
-        outputToken->value = GSSEAP_MALLOC(sizeof(gssEapSupportedAcceptorExts));
-        if (outputToken->value == NULL) {
-            *minor = ENOMEM;
-            return GSS_S_FAILURE;
-        }
-        outputToken->length = sizeof(gssEapSupportedAcceptorExts);
-
-        for (i = 0, p = (unsigned char *)outputToken->value;
-             i < sizeof(gssEapSupportedAcceptorExts)
-                / sizeof(gssEapSupportedAcceptorExts[0]);
-            i++) {
-            store_uint32_be(gssEapSupportedAcceptorExts[i], p);
-            p += 4;
-        }
+        major = gssEapEncodeExtensions(minor,
+                                       gssEapSupportedAcceptorExts,
+                                       sizeof(gssEapSupportedAcceptorExts) /
+                                            sizeof(gssEapSupportedAcceptorExts[0]),
+                                       outputToken);
     } else if (inputToken != GSS_C_NO_BUFFER) {
+        major = gssEapProcessExtensions(minor, inputToken,
+                                        gssEapInitiatorExtsFlagMap,
+                                        sizeof(gssEapInitiatorExtsFlagMap) /
+                                            sizeof(gssEapInitiatorExtsFlagMap[0]),
+                                        &ctx->flags);
     }
+
+    if (GSS_ERROR(major))
+        return major;
 
     return GSS_S_CONTINUE_NEEDED;
 }
-#endif
 
 static OM_uint32
 eapGssSmInitIdentity(OM_uint32 *minor,
@@ -874,7 +873,6 @@ static struct gss_eap_sm eapGssInitiatorSm[] = {
         0,
         eapGssSmInitAcceptorName
     },
-#if 0
     {
         ITOK_TYPE_INITIATOR_EXTS,
         ITOK_TYPE_ACCEPTOR_EXTS,
@@ -882,7 +880,6 @@ static struct gss_eap_sm eapGssInitiatorSm[] = {
         0,
         eapGssSmInitExts
     },
-#endif
 #ifdef GSSEAP_DEBUG
     {
         ITOK_TYPE_NONE,

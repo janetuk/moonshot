@@ -125,6 +125,49 @@ acceptReadyEap(OM_uint32 *minor, gss_ctx_id_t ctx, gss_cred_id_t cred)
 }
 
 static OM_uint32
+gssEapSupportedInitiatorExts[] = {
+};
+
+static struct gss_eap_itok_map
+gssEapAcceptorExtsFlagMap[] = {
+    { ITOK_TYPE_REAUTH_CREDS, CTX_FLAG_KRB_REAUTH_SUPPORTED },
+};
+
+static OM_uint32
+eapGssSmAcceptExts(OM_uint32 *minor,
+                   gss_cred_id_t cred,
+                   gss_ctx_id_t ctx,
+                   gss_name_t target,
+                   gss_OID mech,
+                   OM_uint32 reqFlags,
+                   OM_uint32 timeReq,
+                   gss_channel_bindings_t chanBindings,
+                   gss_buffer_t inputToken,
+                   gss_buffer_t outputToken,
+                   OM_uint32 *smFlags)
+{
+    OM_uint32 major;
+
+    major = gssEapProcessExtensions(minor, inputToken,
+                                    gssEapAcceptorExtsFlagMap,
+                                    sizeof(gssEapAcceptorExtsFlagMap) /
+                                        sizeof(gssEapAcceptorExtsFlagMap[0]),
+                                    &ctx->flags);
+    if (GSS_ERROR(major))
+        return major;
+
+    major = gssEapEncodeExtensions(minor,
+                                   gssEapSupportedInitiatorExts,
+                                   sizeof(gssEapSupportedInitiatorExts) /
+                                        sizeof(gssEapSupportedInitiatorExts[0]),
+                                   outputToken);
+    if (GSS_ERROR(major))
+        return major;
+
+    return GSS_S_CONTINUE_NEEDED;
+}
+
+static OM_uint32
 eapGssSmAcceptAcceptorName(OM_uint32 *minor,
                            gss_cred_id_t cred,
                            gss_ctx_id_t ctx,
@@ -668,13 +711,15 @@ eapGssSmAcceptReauthCreds(OM_uint32 *minor,
      * If we're built with fast reauthentication enabled, then
      * fabricate a ticket from the initiator to ourselves.
      */
-    major = gssEapMakeReauthCreds(minor, ctx, cred, outputToken);
+    if (ctx->flags & CTX_FLAG_KRB_REAUTH_SUPPORTED)
+        major = gssEapMakeReauthCreds(minor, ctx, cred, outputToken);
+    else
+        major = GSS_S_UNAVAILABLE;
+
     if (major == GSS_S_UNAVAILABLE)
         major = GSS_S_COMPLETE;
-    if (major == GSS_S_COMPLETE)
-        major = GSS_S_CONTINUE_NEEDED;
 
-    return major;
+    return GSS_ERROR(major) ? major : GSS_S_CONTINUE_NEEDED;
 }
 #endif
 
@@ -738,6 +783,13 @@ static struct gss_eap_sm eapGssAcceptorSm[] = {
         GSSEAP_STATE_INITIAL,
         0,
         eapGssSmAcceptAcceptorName
+    },
+    {
+        ITOK_TYPE_ACCEPTOR_EXTS,
+        ITOK_TYPE_INITIATOR_EXTS,
+        GSSEAP_STATE_INITIAL,
+        0,
+        eapGssSmAcceptExts,
     },
 #ifdef GSSEAP_DEBUG
     {

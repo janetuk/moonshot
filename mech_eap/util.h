@@ -158,6 +158,11 @@ enum gss_eap_token_type {
     TOK_TYPE_ACCEPTOR_CONTEXT        = 0x0602,  /* acceptor-sent context token */
 };
 
+struct gss_eap_itok_map {
+    OM_uint32 type;                             /* inner token type */
+    OM_uint32 flag;                             /* context flag */
+};
+
 /* inner token types and flags */
 #define ITOK_TYPE_NONE                  0x00000000
 #define ITOK_TYPE_CONTEXT_ERR           0x00000001 /* critical */
@@ -216,6 +221,19 @@ OM_uint32
 gssEapVerifyConversationMIC(OM_uint32 *minor,
                             gss_ctx_id_t ctx,
                             const gss_buffer_t convMIC);
+
+OM_uint32
+gssEapEncodeExtensions(OM_uint32 *minor,
+                       OM_uint32 *types,
+                       size_t typesCount,
+                       gss_buffer_t outputToken);
+
+OM_uint32
+gssEapProcessExtensions(OM_uint32 *minor,
+                        gss_buffer_t inputToken,
+                        struct gss_eap_itok_map *map,
+                        size_t mapCount,
+                        OM_uint32 *flags);
 
 /* util_cred.c */
 OM_uint32 gssEapAllocCred(OM_uint32 *minor, gss_cred_id_t *pCred);

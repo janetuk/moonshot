@@ -378,3 +378,65 @@ gssEapVerifyConversationMIC(OM_uint32 *minor,
 
     return major;
 }
+
+OM_uint32
+gssEapEncodeExtensions(OM_uint32 *minor,
+                       OM_uint32 *types,
+                       size_t typesCount,
+                       gss_buffer_t outputToken)
+{
+    size_t i;
+    unsigned char *p;
+
+    outputToken->value = GSSEAP_MALLOC(4 * typesCount);
+    if (outputToken->value == NULL) {
+        *minor = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+    p = (unsigned char *)outputToken->value;
+
+    outputToken->length = 4 * typesCount;
+
+    for (i = 0; i < typesCount; i++) {
+        store_uint32_be(types[i], p);
+        p += 4;
+    }
+
+    *minor = 0;
+    return GSS_S_COMPLETE;
+}
+
+OM_uint32
+gssEapProcessExtensions(OM_uint32 *minor,
+                        gss_buffer_t inputToken,
+                        struct gss_eap_itok_map *map,
+                        size_t mapCount,
+                        OM_uint32 *flags)
+{
+    size_t i;
+    unsigned char *p;
+
+    if ((inputToken->length % 4) != 0) {
+        *minor = GSSEAP_TOK_TRUNC;
+        return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    p = (unsigned char *)inputToken->value;
+
+    for (i = 0; i < inputToken->length / 4; i++) {
+        OM_uint32 type = load_uint32_be(p);
+        size_t j;
+
+        for (j = 0; j < mapCount; j++) {
+            if (map->type == type) {
+                *flags |= map->flag;
+                break;
+            }
+        }
+
+        p += 4;
+    }
+
+    *minor = 0;
+    return GSS_S_COMPLETE;
+}
