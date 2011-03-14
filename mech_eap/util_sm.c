@@ -125,7 +125,7 @@ recordErrorToken(OM_uint32 *minor,
     errorBuffer.length = sizeof(errorData);
     errorBuffer.value = errorData;
 
-    return gssEapRecordInnerContextToken(minor, ctx, &errorBuffer, 
+    return gssEapRecordInnerContextToken(minor, ctx, &errorBuffer,
                                          ITOK_TYPE_CONTEXT_ERR | ITOK_FLAG_CRITICAL);
 }
 
