@@ -214,7 +214,7 @@ gssEapVerifyConversationMIC(OM_uint32 *minor,
      */
     tokenHeaderLength = ITOK_HEADER_LENGTH + convMIC->length
         + 2 + ctx->mechanismUsed->length + 2;
-    assert(ctx->conversation.length > tokenHeaderLength);
+    assert(ctx->conversation.length >= tokenHeaderLength);
     iov[0].buffer.length -= tokenHeaderLength;
 
     iov[1].type = GSS_IOV_BUFFER_TYPE_HEADER;
@@ -250,7 +250,7 @@ gssEapMakeTokenChannelBindings(OM_uint32 *minor,
 
         tokenHeaderLength = ITOK_HEADER_LENGTH + inputToken->length +
             2 + ctx->mechanismUsed->length + 2;
-        assert(ctx->conversation.length > tokenHeaderLength);
+        assert(ctx->conversation.length >= tokenHeaderLength);
     }
 
     wireData->length = ctx->conversation.length - tokenHeaderLength;
