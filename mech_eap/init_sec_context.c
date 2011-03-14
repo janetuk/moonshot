@@ -427,7 +427,7 @@ eapGssSmInitGssReauth(OM_uint32 *minor,
                       gss_OID mech,
                       OM_uint32 reqFlags,
                       OM_uint32 timeReq,
-                      gss_channel_bindings_t chanBindings,
+                      gss_channel_bindings_t userChanBindings,
                       gss_buffer_t inputToken,
                       gss_buffer_t outputToken,
                       OM_uint32 *smFlags)
@@ -436,12 +436,22 @@ eapGssSmInitGssReauth(OM_uint32 *minor,
     gss_name_t mechTarget = GSS_C_NO_NAME;
     gss_OID actualMech = GSS_C_NO_OID;
     OM_uint32 gssFlags, timeRec;
+    struct gss_channel_bindings_struct wireChanBindings = { 0 };
 
     assert(cred != GSS_C_NO_CREDENTIAL);
 
     if (GSSEAP_SM_STATE(ctx) == GSSEAP_STATE_INITIAL) {
-        if (!gssEapCanReauthP(cred, target, timeReq))
-            return GSS_S_CONTINUE_NEEDED;
+        if (!gssEapCanReauthP(cred, target, timeReq)) {
+            major = GSS_S_CONTINUE_NEEDED;
+            goto cleanup;
+        }
+
+        major = gssEapMakeTokenChannelBindings(minor, ctx,
+                                               userChanBindings,
+                                               GSS_C_NO_BUFFER,
+                                               &wireChanBindings);
+        if (GSS_ERROR(major))
+            goto cleanup;
 
         ctx->flags |= CTX_FLAG_KRB_REAUTH;
     } else if ((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0) {
@@ -461,7 +471,7 @@ eapGssSmInitGssReauth(OM_uint32 *minor,
                               (gss_OID)gss_mech_krb5,
                               reqFlags | GSS_C_MUTUAL_FLAG,
                               timeReq,
-                              chanBindings,
+                              &wireChanBindings,
                               inputToken,
                               &actualMech,
                               outputToken,
@@ -479,15 +489,17 @@ eapGssSmInitGssReauth(OM_uint32 *minor,
         if (GSS_ERROR(major))
             goto cleanup;
 
-        GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_INITIATOR_EXTS);
+        GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_ACCEPTOR_EXTS);
     } else {
         GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_REAUTHENTICATE);
+        *smFlags |= SM_FLAG_SEND_TOKEN;
     }
 
     major = GSS_S_CONTINUE_NEEDED;
 
 cleanup:
     gssReleaseName(&tmpMinor, &mechTarget);
+    gss_release_buffer(&tmpMinor, &wireChanBindings.application_data);
 
     return major;
 }
@@ -630,7 +642,7 @@ eapGssSmInitIdentity(OM_uint32 *minor,
         GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_INITIAL);
     } else
 #endif
-        *smFlags |= SM_FLAG_FORCE_SEND_TOKEN;
+        *smFlags |= SM_FLAG_SEND_TOKEN;
 
     assert((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0);
     assert(inputToken == GSS_C_NO_BUFFER);
@@ -734,7 +746,7 @@ cleanup:
             *minor = tmpMinor;
         }
 
-        *smFlags |= SM_FLAG_OUTPUT_TOKEN_CRITICAL;
+        *smFlags |= SM_FLAG_SEND_TOKEN | SM_FLAG_OUTPUT_TOKEN_CRITICAL;
     }
 
     wpabuf_set(&ctx->initiatorCtx.reqData, NULL, 0);
@@ -827,7 +839,7 @@ eapGssSmInitInitiatorMIC(OM_uint32 *minor,
     GSSEAP_SM_TRANSITION_NEXT(ctx);
 
     *minor = 0;
-    *smFlags |= SM_FLAG_OUTPUT_TOKEN_CRITICAL;
+    *smFlags |= SM_FLAG_SEND_TOKEN | SM_FLAG_OUTPUT_TOKEN_CRITICAL;
 
     return GSS_S_CONTINUE_NEEDED;
 }

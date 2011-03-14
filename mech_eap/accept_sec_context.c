@@ -267,7 +267,7 @@ eapGssSmAcceptIdentity(OM_uint32 *minor,
     GSSEAP_SM_TRANSITION_NEXT(ctx);
 
     *minor = 0;
-    *smFlags |= SM_FLAG_OUTPUT_TOKEN_CRITICAL;
+    *smFlags |= SM_FLAG_SEND_TOKEN | SM_FLAG_OUTPUT_TOKEN_CRITICAL;
 
     return GSS_S_CONTINUE_NEEDED;
 }
@@ -627,7 +627,7 @@ eapGssSmAcceptAuthenticate(OM_uint32 *minor,
 
     major = GSS_S_CONTINUE_NEEDED;
     *minor = 0;
-    *smFlags |= SM_FLAG_OUTPUT_TOKEN_CRITICAL;
+    *smFlags |= SM_FLAG_SEND_TOKEN | SM_FLAG_OUTPUT_TOKEN_CRITICAL;
 
 cleanup:
     if (request != NULL)
@@ -771,12 +771,21 @@ eapGssSmAcceptAcceptorMIC(OM_uint32 *minor,
     GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_ESTABLISHED);
 
     *minor = 0;
-    *smFlags |= SM_FLAG_OUTPUT_TOKEN_CRITICAL;
+    *smFlags |= SM_FLAG_SEND_TOKEN | SM_FLAG_OUTPUT_TOKEN_CRITICAL;
 
     return GSS_S_COMPLETE;
 }
 
 static struct gss_eap_sm eapGssAcceptorSm[] = {
+#ifdef GSSEAP_ENABLE_REAUTH
+    {
+        ITOK_TYPE_REAUTH_REQ,
+        ITOK_TYPE_REAUTH_RESP,
+        GSSEAP_STATE_INITIAL,
+        0,
+        eapGssSmAcceptGssReauth,
+    },
+#endif
     {
         ITOK_TYPE_ACCEPTOR_NAME_REQ,
         ITOK_TYPE_ACCEPTOR_NAME_RESP,
@@ -798,15 +807,6 @@ static struct gss_eap_sm eapGssAcceptorSm[] = {
         GSSEAP_STATE_INITIAL,
         0,
         eapGssSmAcceptVendorInfo,
-    },
-#endif
-#ifdef GSSEAP_ENABLE_REAUTH
-    {
-        ITOK_TYPE_REAUTH_REQ,
-        ITOK_TYPE_REAUTH_RESP,
-        GSSEAP_STATE_INITIAL,
-        0,
-        eapGssSmAcceptGssReauth,
     },
 #endif
     {
@@ -1001,7 +1001,7 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
                         gss_OID mech,
                         OM_uint32 reqFlags,
                         OM_uint32 timeReq,
-                        gss_channel_bindings_t chanBindings,
+                        gss_channel_bindings_t userChanBindings,
                         gss_buffer_t inputToken,
                         gss_buffer_t outputToken,
                         OM_uint32 *smFlags)
@@ -1009,6 +1009,7 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
     OM_uint32 major, tmpMinor;
     gss_name_t krbInitiator = GSS_C_NO_NAME;
     OM_uint32 gssFlags, timeRec = GSS_C_INDEFINITE;
+    struct gss_channel_bindings_struct wireChanBindings = { 0 };
 
     /*
      * If we're built with fast reauthentication support, it's valid
@@ -1019,11 +1020,20 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
 
     ctx->flags |= CTX_FLAG_KRB_REAUTH;
 
+    if (GSSEAP_SM_STATE(ctx) == GSSEAP_STATE_INITIAL) {
+        major = gssEapMakeTokenChannelBindings(minor, ctx,
+                                               userChanBindings,
+                                               inputToken,
+                                               &wireChanBindings);
+        if (GSS_ERROR(major))
+            return major;
+    }
+
     major = gssAcceptSecContext(minor,
                                 &ctx->kerberosCtx,
                                 cred->krbCred,
                                 inputToken,
-                                chanBindings,
+                                &wireChanBindings,
                                 &krbInitiator,
                                 &mech,
                                 outputToken,
@@ -1034,7 +1044,7 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
         major = acceptReadyKrb(minor, ctx, cred,
                                krbInitiator, mech, timeRec);
         if (major == GSS_S_COMPLETE) {
-            GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_INITIATOR_EXTS);
+            GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_ACCEPTOR_EXTS);
         }
         ctx->gssFlags = gssFlags;
     } else if (GSS_ERROR(major) &&
@@ -1048,6 +1058,7 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
     major = GSS_S_CONTINUE_NEEDED;
 
     gssReleaseName(&tmpMinor, &krbInitiator);
+    gss_release_buffer(&tmpMinor, &wireChanBindings.application_data);
 
     return major;
 }

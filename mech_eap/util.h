@@ -235,6 +235,13 @@ gssEapProcessExtensions(OM_uint32 *minor,
                         size_t mapCount,
                         OM_uint32 *flags);
 
+OM_uint32
+gssEapMakeTokenChannelBindings(OM_uint32 *minor,
+                               gss_ctx_id_t ctx,
+                               gss_channel_bindings_t userBindings,
+                               gss_buffer_t inputToken,
+                               gss_channel_bindings_t wireBindings);
+
 /* util_cred.c */
 OM_uint32 gssEapAllocCred(OM_uint32 *minor, gss_cred_id_t *pCred);
 OM_uint32 gssEapReleaseCred(OM_uint32 *minor, gss_cred_id_t *pCred);
@@ -616,7 +623,7 @@ struct gss_eap_sm {
 };
 
 /* state machine flags, set by handler */
-#define SM_FLAG_FORCE_SEND_TOKEN            0x00000001  /* send token even if no inner tokens */
+#define SM_FLAG_SEND_TOKEN                  0x00000001  /* exit state machine, send token */
 #define SM_FLAG_OUTPUT_TOKEN_CRITICAL       0x00000002  /* output token is critical */
 
 /* state machine flags, set by state machine */
