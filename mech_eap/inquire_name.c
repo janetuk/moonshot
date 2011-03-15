@@ -58,22 +58,6 @@ OM_uint32 gss_inquire_name(OM_uint32 *minor,
         return GSS_S_CALL_INACCESSIBLE_READ | GSS_S_BAD_NAME;
     }
 
-    if (name_is_MN != NULL)
-        *name_is_MN = 1;
-
-    if (MN_mech != NULL && name->mechanismUsed != GSS_C_NO_OID) {
-        assert(gssEapIsConcreteMechanismOid(name->mechanismUsed));
-
-        if (!gssEapInternalizeOid(name->mechanismUsed, MN_mech)) {
-            major = duplicateOid(minor, name->mechanismUsed, MN_mech);
-            if (GSS_ERROR(major))
-                return major;
-        }
-    }
-
-    if (attrs == NULL)
-        return GSS_S_COMPLETE;
-
     GSSEAP_MUTEX_LOCK(&name->mutex);
 
     major = gssEapInquireName(minor, name, name_is_MN, MN_mech, attrs);

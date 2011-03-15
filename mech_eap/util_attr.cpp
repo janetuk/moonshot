@@ -760,10 +760,25 @@ gss_eap_attr_ctx::composeAttributeName(unsigned int type,
 OM_uint32
 gssEapInquireName(OM_uint32 *minor,
                   gss_name_t name,
-                  int *name_is_MN GSSEAP_UNUSED,
-                  gss_OID *MN_mech GSSEAP_UNUSED,
+                  int *name_is_MN,
+                  gss_OID *MN_mech,
                   gss_buffer_set_t *attrs)
 {
+    OM_uint32 major;
+
+    if (name_is_MN != NULL)
+        *name_is_MN = 1;
+
+    if (MN_mech != NULL && name->mechanismUsed != GSS_C_NO_OID) {
+        assert(gssEapIsConcreteMechanismOid(name->mechanismUsed));
+
+        if (!gssEapInternalizeOid(name->mechanismUsed, MN_mech)) {
+            major = duplicateOid(minor, name->mechanismUsed, MN_mech);
+            if (GSS_ERROR(major))
+                return major;
+        }
+    }
+
     if (name->attrCtx == NULL) {
         *minor = GSSEAP_NO_ATTR_CONTEXT;
         return GSS_S_UNAVAILABLE;
@@ -773,13 +788,15 @@ gssEapInquireName(OM_uint32 *minor,
         return GSS_S_UNAVAILABLE;
     }
 
-    try {
-        if (!name->attrCtx->getAttributeTypes(attrs)) {
-            *minor = GSSEAP_NO_ATTR_CONTEXT;
-            return GSS_S_UNAVAILABLE;
+    if (attrs != NULL) {
+        try {
+            if (!name->attrCtx->getAttributeTypes(attrs)) {
+                *minor = GSSEAP_NO_ATTR_CONTEXT;
+                return GSS_S_UNAVAILABLE;
+            }
+        } catch (std::exception &e) {
+            return name->attrCtx->mapException(minor, e);
         }
-    } catch (std::exception &e) {
-        return name->attrCtx->mapException(minor, e);
     }
 
     return GSS_S_COMPLETE;
