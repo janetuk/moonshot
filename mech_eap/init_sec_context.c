@@ -432,7 +432,7 @@ eapGssSmInitGssReauth(OM_uint32 *minor,
                       gss_channel_bindings_t userChanBindings,
                       gss_buffer_t inputToken,
                       gss_buffer_t outputToken,
-                      OM_uint32 *smFlags GSSEAP_UNUSED)
+                      OM_uint32 *smFlags)
 {
     OM_uint32 major, tmpMinor;
     gss_name_t mechTarget = GSS_C_NO_NAME;
