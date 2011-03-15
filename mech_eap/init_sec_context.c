@@ -870,6 +870,9 @@ eapGssSmInitAcceptorMIC(OM_uint32 *minor,
     return GSS_S_COMPLETE;
 }
 
+/*
+ * Initiator state machine.
+ */
 static struct gss_eap_sm eapGssInitiatorSm[] = {
     {
         ITOK_TYPE_CONTEXT_ERR,

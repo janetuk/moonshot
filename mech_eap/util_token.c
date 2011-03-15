@@ -134,6 +134,9 @@ cleanup:
     return major;
 }
 
+/*
+ * Add some data to the initiator/acceptor conversation.
+ */
 static OM_uint32
 recordTokens(OM_uint32 *minor,
              gss_ctx_id_t ctx,
@@ -168,6 +171,9 @@ recordTokens(OM_uint32 *minor,
     return GSS_S_COMPLETE;
 }
 
+/*
+ * Record the context token header.
+ */
 OM_uint32
 gssEapRecordContextTokenHeader(OM_uint32 *minor,
                                gss_ctx_id_t ctx,
@@ -193,6 +199,9 @@ gssEapRecordContextTokenHeader(OM_uint32 *minor,
     return recordTokens(minor, ctx, buffers, sizeof(buffers)/sizeof(buffers[0]));
 }
 
+/*
+ * Record an inner context token.
+ */
 OM_uint32
 gssEapRecordInnerContextToken(OM_uint32 *minor,
                               gss_ctx_id_t ctx,

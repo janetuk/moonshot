@@ -776,6 +776,9 @@ eapGssSmAcceptAcceptorMIC(OM_uint32 *minor,
     return GSS_S_COMPLETE;
 }
 
+/*
+ * Acceptor state machine.
+ */
 static struct gss_eap_sm eapGssAcceptorSm[] = {
 #ifdef GSSEAP_ENABLE_REAUTH
     {
@@ -1021,6 +1024,13 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
     ctx->flags |= CTX_FLAG_KRB_REAUTH;
 
     if (GSSEAP_SM_STATE(ctx) == GSSEAP_STATE_INITIAL) {
+        /*
+         * To avoid an additional round trip, we use GSS channel bindings
+         * to integrity protect the rest of the initiator exchange. This
+         * does have the disadvantage of making it impossible for the
+         * acceptor to ignore application channel bindings, behaviour
+         * which differs from normal Kerberos and GSS-EAP itself.
+         */
         major = gssEapMakeTokenChannelBindings(minor, ctx,
                                                userChanBindings,
                                                inputToken,
@@ -1044,12 +1054,13 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
         major = acceptReadyKrb(minor, ctx, cred,
                                krbInitiator, mech, timeRec);
         if (major == GSS_S_COMPLETE) {
+            /* Generate acceptor MIC */
             GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_ACCEPTOR_EXTS);
         }
         ctx->gssFlags = gssFlags;
     } else if (GSS_ERROR(major) &&
         (*smFlags & SM_FLAG_INPUT_TOKEN_CRITICAL) == 0) {
-        /* pretend reauthentication attempt never happened */
+        /* Fall back to EAP */
         gssDeleteSecContext(&tmpMinor, &ctx->kerberosCtx, GSS_C_NO_BUFFER);
         ctx->flags &= ~(CTX_FLAG_KRB_REAUTH);
         GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_INITIAL);
