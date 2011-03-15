@@ -784,7 +784,7 @@ static struct gss_eap_sm eapGssAcceptorSm[] = {
     {
         ITOK_TYPE_REAUTH_REQ,
         ITOK_TYPE_REAUTH_RESP,
-        GSSEAP_STATE_INITIAL,
+        GSSEAP_STATE_INITIAL | GSSEAP_STATE_REAUTHENTICATE,
         0,
         eapGssSmAcceptGssReauth,
     },
@@ -1023,21 +1023,19 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
 
     ctx->flags |= CTX_FLAG_KRB_REAUTH;
 
-    if (GSSEAP_SM_STATE(ctx) == GSSEAP_STATE_INITIAL) {
-        /*
-         * To avoid an additional round trip, we use GSS channel bindings
-         * to integrity protect the rest of the initiator exchange. This
-         * does have the disadvantage of making it impossible for the
-         * acceptor to ignore application channel bindings, behaviour
-         * which differs from normal Kerberos and GSS-EAP itself.
-         */
-        major = gssEapMakeTokenChannelBindings(minor, ctx,
-                                               userChanBindings,
-                                               inputToken,
-                                               &wireChanBindings);
-        if (GSS_ERROR(major))
-            return major;
-    }
+    /*
+     * To avoid an additional round trip, we use GSS channel bindings
+     * to integrity protect the rest of the initiator exchange. This
+     * does have the disadvantage of making it impossible for the
+     * acceptor to ignore application channel bindings, behaviour
+     * which differs from normal Kerberos and GSS-EAP itself.
+     */
+    major = gssEapMakeTokenChannelBindings(minor, ctx,
+                                           userChanBindings,
+                                           inputToken,
+                                           &wireChanBindings);
+    if (GSS_ERROR(major))
+        return major;
 
     major = gssAcceptSecContext(minor,
                                 &ctx->kerberosCtx,
@@ -1064,6 +1062,8 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
         gssDeleteSecContext(&tmpMinor, &ctx->kerberosCtx, GSS_C_NO_BUFFER);
         ctx->flags &= ~(CTX_FLAG_KRB_REAUTH);
         GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_INITIAL);
+    } else {
+        GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_REAUTHENTICATE);
     }
 
     major = GSS_S_CONTINUE_NEEDED;
