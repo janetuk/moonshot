@@ -176,16 +176,19 @@ struct gss_eap_itok_map {
 #define ITOK_TYPE_ACCEPTOR_NAME_RESP        0x00000003 /* TBD */
 #define ITOK_TYPE_EAP_RESP                  0x00000004 /* critical, required, if not reauth */
 #define ITOK_TYPE_EAP_REQ                   0x00000005 /* critical, required, if not reauth */
-#define ITOK_TYPE_GSS_CHANNEL_BINDINGS      0x00000006 /* critical, required, if not reauth */
+#define ITOK_TYPE_GSS_CHANNEL_BINDINGS      0x00000006 /* optional */
 #define ITOK_TYPE_REAUTH_CREDS              0x00000007 /* optional */
 #define ITOK_TYPE_REAUTH_REQ                0x00000008 /* optional */
 #define ITOK_TYPE_REAUTH_RESP               0x00000009 /* optional */
-#define ITOK_TYPE_INITIATOR_MIC             0x0000000A /* required */
-#define ITOK_TYPE_ACCEPTOR_MIC              0x0000000B /* required */
-#define ITOK_TYPE_SUPPORTED_ACCEPTOR_EXTS   0x0000000C /* optional */
-#define ITOK_TYPE_SUPPORTED_INITIATOR_EXTS  0x0000000D /* optional */
-#define ITOK_TYPE_VERSION_INFO              0x0000000E /* optional */
-#define ITOK_TYPE_VENDOR_INFO               0x0000000F /* optional */
+#define ITOK_TYPE_GSS_FLAGS                 0x0000000A /* optional */
+#define ITOK_TYPE_INITIATOR_MIC             0x0000000B /* required */
+#define ITOK_TYPE_ACCEPTOR_MIC              0x0000000C /* required */
+#define ITOK_TYPE_SUPPORTED_ACCEPTOR_EXTS   0x0000000D /* optional */
+#define ITOK_TYPE_SUPPORTED_INITIATOR_EXTS  0x0000000E /* optional */
+
+/* experimental */
+#define ITOK_TYPE_VERSION_INFO              0x00000080 /* optional */
+#define ITOK_TYPE_VENDOR_INFO               0x00000081 /* optional */
 
 #define ITOK_FLAG_CRITICAL                  0x80000000  /* critical, wire flag */
 #define ITOK_FLAG_VERIFIED                  0x40000000  /* verified, API flag */
@@ -193,6 +196,8 @@ struct gss_eap_itok_map {
 #define ITOK_TYPE_MASK                      (~(ITOK_FLAG_CRITICAL | ITOK_FLAG_VERIFIED))
 
 #define ITOK_HEADER_LENGTH                  8           /* type || length */
+
+#define GSSEAP_WIRE_FLAGS_MASK              ( GSS_C_MUTUAL_FLAG )
 
 OM_uint32 gssEapAllocContext(OM_uint32 *minor, gss_ctx_id_t *pCtx);
 OM_uint32 gssEapReleaseContext(OM_uint32 *minor, gss_ctx_id_t *pCtx);

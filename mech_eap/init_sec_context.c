@@ -760,6 +760,30 @@ cleanup:
 }
 
 static OM_uint32
+eapGssSmInitGssFlags(OM_uint32 *minor,
+                     gss_cred_id_t cred GSSEAP_UNUSED,
+                     gss_ctx_id_t ctx,
+                     gss_name_t target GSSEAP_UNUSED,
+                     gss_OID mech GSSEAP_UNUSED,
+                     OM_uint32 reqFlags GSSEAP_UNUSED,
+                     OM_uint32 timeReq GSSEAP_UNUSED,
+                     gss_channel_bindings_t chanBindings GSSEAP_UNUSED,
+                     gss_buffer_t inputToken GSSEAP_UNUSED,
+                     gss_buffer_t outputToken,
+                     OM_uint32 *smFlags GSSEAP_UNUSED)
+{
+    unsigned char wireFlags[4];
+    gss_buffer_desc flagsBuf;
+
+    store_uint32_be(ctx->gssFlags & GSSEAP_WIRE_FLAGS_MASK, wireFlags);
+
+    flagsBuf.length = sizeof(wireFlags);
+    flagsBuf.value = wireFlags;
+
+    return duplicateBuffer(minor, &flagsBuf, outputToken);
+}
+
+static OM_uint32
 eapGssSmInitGssChannelBindings(OM_uint32 *minor,
                                gss_cred_id_t cred GSSEAP_UNUSED,
                                gss_ctx_id_t ctx,
@@ -770,27 +794,19 @@ eapGssSmInitGssChannelBindings(OM_uint32 *minor,
                                gss_channel_bindings_t chanBindings,
                                gss_buffer_t inputToken GSSEAP_UNUSED,
                                gss_buffer_t outputToken,
-                               OM_uint32 *smFlags)
+                               OM_uint32 *smFlags GSSEAP_UNUSED)
 {
     OM_uint32 major;
-    gss_buffer_desc buffer = GSS_C_EMPTY_BUFFER;
 
-    if (ctx->flags & CTX_FLAG_KRB_REAUTH)
-        return GSS_S_CONTINUE_NEEDED;
-
-    if (chanBindings != GSS_C_NO_CHANNEL_BINDINGS)
-        buffer = chanBindings->application_data;
-
-    major = gssEapWrap(minor, ctx, TRUE, GSS_C_QOP_DEFAULT,
-                       &buffer, NULL, outputToken);
-    if (GSS_ERROR(major))
-        return major;
-
-    assert(outputToken->value != NULL);
+    if ((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0 &&
+        chanBindings != GSS_C_NO_CHANNEL_BINDINGS) {
+        major = gssEapWrap(minor, ctx, TRUE, GSS_C_QOP_DEFAULT,
+                           &chanBindings->application_data, NULL, outputToken);
+        if (GSS_ERROR(major))
+            return major;
+    }
 
     *minor = 0;
-    *smFlags |= SM_FLAG_OUTPUT_TOKEN_CRITICAL;
-
     return GSS_S_CONTINUE_NEEDED;
 }
 
@@ -933,6 +949,13 @@ static struct gss_eap_sm eapGssInitiatorSm[] = {
         GSSEAP_STATE_AUTHENTICATE,
         SM_ITOK_FLAG_REQUIRED,
         eapGssSmInitAuthenticate
+    },
+    {
+        ITOK_TYPE_NONE,
+        ITOK_TYPE_GSS_FLAGS,
+        GSSEAP_STATE_INITIATOR_EXTS,
+        0,
+        eapGssSmInitGssFlags
     },
     {
         ITOK_TYPE_NONE,

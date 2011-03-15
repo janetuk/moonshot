@@ -649,6 +649,40 @@ cleanup:
 }
 
 static OM_uint32
+eapGssSmAcceptGssFlags(OM_uint32 *minor,
+                       gss_cred_id_t cred GSSEAP_UNUSED,
+                       gss_ctx_id_t ctx,
+                       gss_name_t target GSSEAP_UNUSED,
+                       gss_OID mech GSSEAP_UNUSED,
+                       OM_uint32 reqFlags GSSEAP_UNUSED,
+                       OM_uint32 timeReq GSSEAP_UNUSED,
+                       gss_channel_bindings_t chanBindings GSSEAP_UNUSED,
+                       gss_buffer_t inputToken,
+                       gss_buffer_t outputToken GSSEAP_UNUSED,
+                       OM_uint32 *smFlags GSSEAP_UNUSED)
+{
+    unsigned char *p;
+    OM_uint32 initiatorGssFlags;
+
+    assert((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0);
+
+    if (inputToken->length < 4) {
+        *minor = GSSEAP_TOK_TRUNC;
+        return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    /* allow flags to grow for future expansion */
+    p = (unsigned char *)inputToken->value + inputToken->length - 4;
+
+    initiatorGssFlags = load_uint32_be(p);
+    initiatorGssFlags &= GSSEAP_WIRE_FLAGS_MASK;
+
+    ctx->gssFlags |= initiatorGssFlags;
+
+    return GSS_S_CONTINUE_NEEDED;
+}
+
+static OM_uint32
 eapGssSmAcceptGssChannelBindings(OM_uint32 *minor,
                                  gss_cred_id_t cred GSSEAP_UNUSED,
                                  gss_ctx_id_t ctx,
@@ -664,8 +698,7 @@ eapGssSmAcceptGssChannelBindings(OM_uint32 *minor,
     OM_uint32 major, tmpMinor;
     gss_iov_buffer_desc iov[2];
 
-    if (ctx->flags & CTX_FLAG_KRB_REAUTH)
-        return GSS_S_CONTINUE_NEEDED;
+    assert((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0);
 
     iov[0].type = GSS_IOV_BUFFER_TYPE_DATA | GSS_IOV_BUFFER_FLAG_ALLOCATE;
     iov[0].buffer.length = 0;
@@ -739,6 +772,8 @@ eapGssSmAcceptInitiatorMIC(OM_uint32 *minor,
                            OM_uint32 *smFlags GSSEAP_UNUSED)
 {
     OM_uint32 major;
+
+    assert((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0);
 
     major = gssEapVerifyConversationMIC(minor, ctx, inputToken);
     if (GSS_ERROR(major))
@@ -827,6 +862,13 @@ static struct gss_eap_sm eapGssAcceptorSm[] = {
         GSSEAP_STATE_AUTHENTICATE,
         SM_ITOK_FLAG_REQUIRED,
         eapGssSmAcceptAuthenticate
+    },
+    {
+        ITOK_TYPE_GSS_FLAGS,
+        ITOK_TYPE_NONE,
+        GSSEAP_STATE_INITIATOR_EXTS,
+        0,
+        eapGssSmAcceptGssFlags
     },
     {
         ITOK_TYPE_GSS_CHANNEL_BINDINGS,
