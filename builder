@@ -129,6 +129,7 @@ configure_opts = ['--prefix', prefix,
                   + " -Wl,-R"+prefix+"/lib'",
                   'CPPFLAGS="-I '+prefix+'/include"',
                   '--with-system-libtool', '--with-system-libltdl',
+                  '--enable-tls',
                   "--with-xmltooling="+prefix, 
                   ]
 if options.configure_opts is not None: 
