@@ -767,16 +767,13 @@ gssEapInquireName(OM_uint32 *minor,
     OM_uint32 major;
 
     if (name_is_MN != NULL)
-        *name_is_MN = 1;
+        *name_is_MN = (name->mechanismUsed != GSS_C_NULL_OID);
 
-    if (MN_mech != NULL && name->mechanismUsed != GSS_C_NO_OID) {
-        assert(gssEapIsConcreteMechanismOid(name->mechanismUsed));
-
-        if (!gssEapInternalizeOid(name->mechanismUsed, MN_mech)) {
-            major = duplicateOid(minor, name->mechanismUsed, MN_mech);
-            if (GSS_ERROR(major))
-                return major;
-        }
+    if (MN_mech != NULL) {
+        major = gssEapCanonicalizeOid(minor, name->mechanismUsed,
+                                      OID_FLAG_NULL_VALID, MN_mech);
+        if (GSS_ERROR(major))
+            return major;
     }
 
     if (name->attrCtx == NULL) {

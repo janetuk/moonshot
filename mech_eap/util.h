@@ -423,9 +423,16 @@ gssEapExportLucidSecContext(OM_uint32 *minor,
 /* util_mech.c */
 extern gss_OID GSS_EAP_MECHANISM;
 
-int
-gssEapInternalizeOid(const gss_OID oid,
-                     gss_OID *const pInternalizedOid);
+#define OID_FLAG_NULL_VALID                 0x00000001
+#define OID_FLAG_FAMILY_MECH_VALID          0x00000002
+#define OID_FLAG_MAP_NULL_TO_DEFAULT_MECH   0x00000004
+#define OID_FLAG_MAP_FAMILY_MECH_TO_NULL    0x00000008
+
+OM_uint32
+gssEapCanonicalizeOid(OM_uint32 *minor,
+                      const gss_OID oid,
+                      OM_uint32 flags,
+                      gss_OID *pOid);
 
 OM_uint32
 gssEapReleaseOid(OM_uint32 *minor, gss_OID *oid);
@@ -490,6 +497,12 @@ OM_uint32
 gssEapDuplicateName(OM_uint32 *minor,
                     const gss_name_t input_name,
                     gss_name_t *dest_name);
+
+OM_uint32
+gssEapCanonicalizeName(OM_uint32 *minor,
+                       const gss_name_t input_name,
+                       const gss_OID mech_type,
+                       gss_name_t *dest_name);
 
 OM_uint32
 gssEapDisplayName(OM_uint32 *minor,
