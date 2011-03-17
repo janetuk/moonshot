@@ -241,23 +241,7 @@ importAnonymousName(OM_uint32 *minor,
                     const gss_buffer_t nameBuffer GSSEAP_UNUSED,
                     gss_name_t *pName)
 {
-    OM_uint32 major;
-    krb5_context krbContext;
-    krb5_principal krbPrinc;
-
-    GSSEAP_KRB_INIT(&krbContext);
-
-    *minor = krb5_copy_principal(krbContext, krbAnonymousPrincipal(),
-                                 &krbPrinc);
-    if (*minor != 0)
-        return GSS_S_FAILURE;
-
-    major = krbPrincipalToName(minor, &krbPrinc, pName);
-    if (GSS_ERROR(major)) {
-        krb5_free_principal(krbContext, krbPrinc);
-    }
-
-    return major;
+    return importUserName(minor, GSS_C_NO_BUFFER, pName);
 }
 
 #define UPDATE_REMAIN(n)    do {            \
