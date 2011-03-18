@@ -224,7 +224,11 @@ peerConfigInit(OM_uint32 *minor,
 
     assert(cred->name != GSS_C_NO_NAME);
 
-    if ((cred->name->flags & (NAME_FLAG_NAI | NAME_FLAG_SERVICE)) == 0) {
+    /*
+     * draft-ietf-abfab-gss-eap-01: the host portion is empty
+     * for initiators.
+     */
+    if ((cred->name->flags & NAME_FLAG_NAI) == 0) {
         *minor = GSSEAP_BAD_INITIATOR_NAME;
         return GSS_S_BAD_NAME;
     }
