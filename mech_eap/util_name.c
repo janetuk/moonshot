@@ -59,12 +59,12 @@
 
 #include "gssapiP_eap.h"
 
-static gss_OID_desc gssEapNtPrincipalName = {
+static gss_OID_desc gssEapNtEapName = {
     /* 1.3.6.1.4.1.5322.22.2.1  */
     10, "\x2B\x06\x01\x04\x01\xA9\x4A\x16\x02\x01"
 };
 
-gss_OID GSS_EAP_NT_PRINCIPAL_NAME = &gssEapNtPrincipalName;
+gss_OID GSS_EAP_NT_EAP_NAME = &gssEapNtEapName;
 
 OM_uint32
 gssEapAllocName(OM_uint32 *minor, gss_name_t *pName)
@@ -155,9 +155,10 @@ importServiceName(OM_uint32 *minor,
                   gss_name_t *pName)
 {
     OM_uint32 major;
+    krb5_error_code code;
     krb5_context krbContext;
     krb5_principal krbPrinc;
-    char *service, *host;
+    char *service, *host, *realm = NULL;
 
     GSSEAP_KRB_INIT(&krbContext);
 
@@ -171,20 +172,32 @@ importServiceName(OM_uint32 *minor,
         host++;
     }
 
-    /* XXX this is probably NOT what we want to be doing */
-    if (krb5_sname_to_principal(krbContext, host, service,
-                                KRB5_NT_SRV_HST, &krbPrinc) != 0) {
-        GSSEAP_FREE(service);
-        *minor = GSSEAP_BAD_SERVICE_NAME;
-        return GSS_S_FAILURE;
-    }
+    krb5_get_default_realm(krbContext, &realm);
 
-    major = krbPrincipalToName(minor, &krbPrinc, pName);
-    if (GSS_ERROR(major)) {
-        krb5_free_principal(krbContext, krbPrinc);
+    code = krb5_build_principal(krbContext,
+                                &krbPrinc,
+                                realm != NULL ? strlen(realm) : 0,
+                                realm != NULL ? realm : "",
+                                service,
+                                host,
+                                NULL);
+
+    if (realm != NULL)
+        krb5_free_default_realm(krbContext, realm);
+
+    if (code == 0) {
+        KRB_PRINC_TYPE(krbPrinc) = KRB5_NT_SRV_HST;
+
+        major = krbPrincipalToName(minor, &krbPrinc, pName);
+        if (GSS_ERROR(major))
+            krb5_free_principal(krbContext, krbPrinc);
+    } else {
+        major = GSS_S_FAILURE;
+        *minor = GSSEAP_BAD_SERVICE_NAME;
     }
 
     GSSEAP_FREE(service);
+
     return major;
 }
 
@@ -383,24 +396,25 @@ importCompositeExportName(OM_uint32 *minor,
 #endif
 
 struct gss_eap_name_import_provider {
-    gss_OID oid;
+    gss_const_OID oid;
     OM_uint32 (*import)(OM_uint32 *, const gss_buffer_t, gss_name_t *);
 };
 
 OM_uint32
 gssEapImportName(OM_uint32 *minor,
                  const gss_buffer_t nameBuffer,
-                 gss_OID nameType,
-                 gss_OID mechType,
+                 const gss_OID nameType,
+                 const gss_OID mechType,
                  gss_name_t *pName)
 {
     struct gss_eap_name_import_provider nameTypes[] = {
+        { GSS_EAP_NT_EAP_NAME,              importUserName              },
         { GSS_C_NT_USER_NAME,               importUserName              },
-        { GSS_EAP_NT_PRINCIPAL_NAME,        importUserName              },
         { GSS_C_NT_HOSTBASED_SERVICE,       importServiceName           },
         { GSS_C_NT_HOSTBASED_SERVICE_X,     importServiceName           },
         { GSS_C_NT_ANONYMOUS,               importAnonymousName         },
         { GSS_C_NT_EXPORT_NAME,             importExportName            },
+        { GSS_KRB5_NT_PRINCIPAL_NAME,       importUserName              },
 #ifdef HAVE_GSS_C_NT_COMPOSITE_EXPORT
         { GSS_C_NT_COMPOSITE_EXPORT,        importCompositeExportName   },
 #endif
@@ -410,11 +424,9 @@ gssEapImportName(OM_uint32 *minor,
     OM_uint32 tmpMinor;
     gss_name_t name = GSS_C_NO_NAME;
 
-    if (nameType == GSS_C_NO_OID)
-        nameType = nameTypes[0].oid;
-
     for (i = 0; i < sizeof(nameTypes) / sizeof(nameTypes[0]); i++) {
-        if (oidEqual(nameTypes[i].oid, nameType)) {
+        if (oidEqual(nameTypes[i].oid,
+                     nameType == GSS_C_NO_OID ? GSS_EAP_NT_EAP_NAME : nameType)) {
             major = nameTypes[i].import(minor, nameBuffer, &name);
             break;
         }
@@ -650,7 +662,7 @@ gssEapDisplayName(OM_uint32 *minor,
                                name->krbPrincipal, krbAnonymousPrincipal())) {
         name_type = GSS_C_NT_ANONYMOUS;
     } else {
-        name_type = GSS_EAP_NT_PRINCIPAL_NAME;
+        name_type = GSS_EAP_NT_EAP_NAME;
     }
 
     if (output_name_type != NULL)
