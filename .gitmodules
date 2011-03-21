@@ -25,6 +25,6 @@
 [submodule "freeradius"]
 	path = freeradius
 	url = http://www.project-moonshot.org/git/freeradius.git
-#[submodule "openssh"]
-#	path = openssh
-#	url = http://www.project-moonshot.org/git/openssh.git
+[submodule "openssh"]
+	path = openssh
+	url = http://www.project-moonshot.org/git/openssh.git
