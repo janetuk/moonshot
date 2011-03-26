@@ -76,9 +76,9 @@ public:
     void releaseAnyNameMapping(gss_buffer_t type_id,
                                gss_any_t input) const;
 
-    void exportToBuffer(gss_buffer_t buffer) const;
-    bool initFromBuffer(const gss_eap_attr_ctx *ctx,
-                        const gss_buffer_t buffer);
+    bool unmarshallAndInit(const gss_eap_attr_ctx *manager,
+                           DDF &object GSSEAP_UNUSED);
+    DDF marshall(void) const;
 
     static bool init(void);
     static void finalize(void);

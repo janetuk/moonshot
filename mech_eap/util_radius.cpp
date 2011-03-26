@@ -36,6 +36,8 @@
 
 #include "gssapiP_eap.h"
 
+#include <xercesc/util/Base64.hpp>
+
 /* stuff that should be provided by libradsec/libfreeradius-radius */
 #define VENDORATTR(vendor, attr)            (((vendor) << 16) | (attr))
 
@@ -621,71 +623,42 @@ gssEapRadiusAttrProviderFinalize(OM_uint32 *minor)
     return GSS_S_COMPLETE;
 }
 
-/*
- * Encoding is:
- * 4 octet NBO attribute ID | 4 octet attribute length | attribute data
- */
-static size_t
-avpSize(const VALUE_PAIR *vp)
+static DDF
+avpExport(const VALUE_PAIR *vp)
 {
-    size_t size = 4 + 1;
+    DDF obj(NULL);
 
-    if (vp != NULL)
-        size += vp->length;
+    obj.addmember("type").integer(vp->attribute);
 
-    return size;
-}
-
-static bool
-avpExport(const VALUE_PAIR *vp,
-          unsigned char **pBuffer,
-          size_t *pRemain)
-{
-    unsigned char *p = *pBuffer;
-    size_t remain = *pRemain;
-
-    assert(remain >= avpSize(vp));
-
-    store_uint32_be(vp->attribute, p);
+    assert(vp->length <= MAX_STRING_LEN);
 
     switch (vp->type) {
     case PW_TYPE_INTEGER:
     case PW_TYPE_IPADDR:
     case PW_TYPE_DATE:
-        p[4] = 4;
-        store_uint32_be(vp->lvalue, p + 5);
+        obj.addmember("value").integer(vp->lvalue);
+        break;
+    case PW_TYPE_STRING:
+        obj.addmember("value").string(vp->vp_strvalue);
         break;
     default:
-        assert(vp->length <= MAX_STRING_LEN);
-        p[4] = (uint8_t)vp->length;
-        memcpy(p + 5, vp->vp_octets, vp->length);
+        XMLSize_t len;
+        XMLByte *b64 = xercesc::Base64::encode(vp->vp_octets, vp->length, &len);
+        obj.addmember("value").string((char *)b64);
         break;
     }
 
-    *pBuffer += 5 + p[4];
-    *pRemain -= 5 + p[4];
-
-    return true;
-
+    return obj;
 }
 
 static bool
-avpImport(VALUE_PAIR **pVp,
-          unsigned char **pBuffer,
-          size_t *pRemain)
+avpImport(VALUE_PAIR **pVp, DDF &obj)
 {
-    unsigned char *p = *pBuffer;
-    size_t remain = *pRemain;
     VALUE_PAIR *vp = NULL;
     DICT_ATTR *da;
     uint32_t attrid;
 
-    if (remain < avpSize(NULL))
-        goto fail;
-
-    attrid = load_uint32_be(p);
-    p += 4;
-    remain -= 4;
+    attrid = obj["type"].integer();
 
     da = dict_attrbyvalue(attrid);
     if (da != NULL) {
@@ -698,40 +671,33 @@ avpImport(VALUE_PAIR **pVp,
         goto fail;
     }
 
-    if (remain < p[0])
-        goto fail;
-
     switch (vp->type) {
     case PW_TYPE_INTEGER:
     case PW_TYPE_IPADDR:
     case PW_TYPE_DATE:
-        if (p[0] != 4)
-            goto fail;
-
         vp->length = 4;
-        vp->lvalue = load_uint32_be(p + 1);
-        p += 5;
-        remain -= 5;
-        break;
-    case PW_TYPE_STRING:
-    default:
-        if (p[0] >= MAX_STRING_LEN)
+        vp->lvalue = obj["value"].integer();;
+    case PW_TYPE_STRING: {
+        const char *str = obj["value"].string();
+        size_t len = strlen(str);
+        if (str == NULL || len >= MAX_STRING_LEN)
             goto fail;
-
-        vp->length = (uint32_t)p[0];
-        memcpy(vp->vp_octets, p + 1, vp->length);
-
-        if (vp->type == PW_TYPE_STRING)
-            vp->vp_strvalue[vp->length] = '\0';
-
-        p += 1 + vp->length;
-        remain -= 1 + vp->length;
+        memcpy(vp->vp_strvalue, str, len + 1);
         break;
+    }
+    default: {
+        const XMLByte *b64 = (const XMLByte *)obj["value"].string();
+        XMLSize_t len;
+        XMLByte *data = xercesc::Base64::decode(b64, &len);
+        if (data == NULL || len >= MAX_STRING_LEN)
+            goto fail;
+        memcpy(vp->vp_octets, data, len);
+        vp->vp_octets[len] = '\0';
+        break;
+    }
     }
 
     *pVp = vp;
-    *pBuffer = p;
-    *pRemain = remain;
 
     return true;
 
@@ -743,54 +709,44 @@ fail:
 }
 
 bool
-gss_eap_radius_attr_provider::initFromBuffer(const gss_eap_attr_ctx *ctx,
-                                             const gss_buffer_t buffer)
+gss_eap_radius_attr_provider::unmarshallAndInit(const gss_eap_attr_ctx *ctx,
+                                                DDF &obj)
 {
-    unsigned char *p = (unsigned char *)buffer->value;
-    size_t remain = buffer->length;
     VALUE_PAIR **pNext = &m_vps;
 
-    if (!gss_eap_attr_provider::initFromBuffer(ctx, buffer))
+    if (!gss_eap_attr_provider::unmarshallAndInit(ctx, obj))
         return false;
 
-    do {
-        VALUE_PAIR *attr;
+    DDF attrs = obj["attributes"];
+    DDF attr = attrs.first();
 
-        if (!avpImport(&attr, &p, &remain))
+    while (!attr.isnull()) {
+        VALUE_PAIR *vp;
+
+        if (!avpImport(&vp, attr))
             return false;
 
-        *pNext = attr;
-        pNext = &attr->next;
-    } while (remain != 0);
+        *pNext = vp;
+        pNext = &vp->next;
+    }
 
     return true;
 }
 
-void
-gss_eap_radius_attr_provider::exportToBuffer(gss_buffer_t buffer) const
+DDF
+gss_eap_radius_attr_provider::marshall(void) const
 {
-    VALUE_PAIR *vp;
-    unsigned char *p;
-    size_t remain = 0;
+    DDF obj(NULL);
+    DDF attrs(NULL);
 
-    for (vp = m_vps; vp != NULL; vp = vp->next) {
-        remain += avpSize(vp);
+    attrs = obj.addmember("attributes").list();
+
+    for (VALUE_PAIR *vp = m_vps; vp != NULL; vp = vp->next) {
+        DDF attr = avpExport(vp);
+        attrs.add(attr);
     }
 
-    buffer->value = GSSEAP_MALLOC(remain);
-    if (buffer->value == NULL) {
-        throw new std::bad_alloc;
-        return;
-    }
-    buffer->length = remain;
-
-    p = (unsigned char *)buffer->value;
-
-    for (vp = m_vps; vp != NULL; vp = vp->next) {
-        avpExport(vp, &p, &remain);
-    }
-
-    assert(remain == 0);
+    return obj;
 }
 
 time_t
