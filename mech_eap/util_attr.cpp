@@ -282,12 +282,14 @@ gss_eap_attr_ctx::initFromGssContext(const gss_cred_id_t cred,
 bool
 gss_eap_attr_ctx::initFromBuffer(const gss_buffer_t buffer)
 {
-    bool ret;
+    bool ret = false;
     size_t remain = buffer->length;
     unsigned char *p = (unsigned char *)buffer->value;
     bool didInit[ATTR_TYPE_MAX + 1];
+    unsigned int type;
 
-    memset(didInit, 0, sizeof(didInit));
+    for (type = ATTR_TYPE_MIN; type <= ATTR_TYPE_MAX; type++)
+        didInit[type] = false;
 
     /* flags */
     CHECK_REMAIN(4);
@@ -331,19 +333,24 @@ gss_eap_attr_ctx::initFromBuffer(const gss_buffer_t buffer)
         didInit[type] = true;
     }
 
-    for (size_t i = ATTR_TYPE_MIN; i <= ATTR_TYPE_MAX; i++) {
+    /*
+     * The call the initFromGssContext methods for attribute
+     * providers that can initialize themselves from other
+     * providers.
+     */
+    for (type = ATTR_TYPE_MIN; type <= ATTR_TYPE_MAX; type++) {
         gss_eap_attr_provider *provider;
 
-        if (didInit[i])
+        if (didInit[type])
             continue;
 
-        provider = m_providers[i];
+        provider = m_providers[type];
 
         ret = provider->initFromGssContext(this,
                                            GSS_C_NO_CREDENTIAL,
                                            GSS_C_NO_CONTEXT);
         if (ret == false) {
-            releaseProvider(i);
+            releaseProvider(type);
             break;
         }
     }
@@ -599,10 +606,14 @@ gss_eap_attr_ctx::exportToBuffer(gss_buffer_t buffer) const
     gss_buffer_desc providerTokens[ATTR_TYPE_MAX + 1];
     size_t length = 4; /* m_flags */
     unsigned char *p;
+    unsigned int i;
 
-    memset(providerTokens, 0, sizeof(providerTokens));
+    for (i = ATTR_TYPE_MIN; i <= ATTR_TYPE_MAX; i++) {
+        providerTokens[i].length = 0;
+        providerTokens[i].value = NULL;
+    }
 
-    for (size_t i = ATTR_TYPE_MIN; i <= ATTR_TYPE_MAX; i++) {
+    for (i = ATTR_TYPE_MIN; i <= ATTR_TYPE_MAX; i++) {
         gss_eap_attr_provider *provider = m_providers[i];
 
         if (provider == NULL)
@@ -623,7 +634,7 @@ gss_eap_attr_ctx::exportToBuffer(gss_buffer_t buffer) const
     store_uint32_be(m_flags, p);
     p += 4;
 
-    for (size_t i = ATTR_TYPE_MIN; i <= ATTR_TYPE_MAX; i++) {
+    for (i = ATTR_TYPE_MIN; i <= ATTR_TYPE_MAX; i++) {
         if (providerTokens[i].value == NULL)
             continue;
 
