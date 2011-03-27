@@ -124,9 +124,15 @@ public:
     {
         return NULL;
     }
+
     virtual void releaseAnyNameMapping(gss_buffer_t type_id GSSEAP_UNUSED,
                                        gss_any_t input GSSEAP_UNUSED) const
     {
+    }
+
+    virtual const char *marshallingKey(void) const
+    {
+        return NULL;
     }
 
     virtual bool unmarshallAndInit(const gss_eap_attr_ctx *manager,

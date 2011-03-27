@@ -624,7 +624,7 @@ gssEapRadiusAttrProviderFinalize(OM_uint32 *minor)
 }
 
 static DDF
-avpExport(const VALUE_PAIR *vp)
+avpMarshall(const VALUE_PAIR *vp)
 {
     DDF obj(NULL);
 
@@ -641,18 +641,24 @@ avpExport(const VALUE_PAIR *vp)
     case PW_TYPE_STRING:
         obj.addmember("value").string(vp->vp_strvalue);
         break;
-    default:
+    default: {
         XMLSize_t len;
         XMLByte *b64 = xercesc::Base64::encode(vp->vp_octets, vp->length, &len);
+
+        if (b64[len - 1] == '\n')
+            b64[--len] = '\0'; /* XXX there may be embedded newlines */
+
         obj.addmember("value").string((char *)b64);
+        delete b64;
         break;
+    }
     }
 
     return obj;
 }
 
 static bool
-avpImport(VALUE_PAIR **pVp, DDF &obj)
+avpUnmarshall(VALUE_PAIR **pVp, DDF &obj)
 {
     VALUE_PAIR *vp = NULL;
     DICT_ATTR *da;
@@ -677,22 +683,31 @@ avpImport(VALUE_PAIR **pVp, DDF &obj)
     case PW_TYPE_DATE:
         vp->length = 4;
         vp->lvalue = obj["value"].integer();;
+        break;
     case PW_TYPE_STRING: {
         const char *str = obj["value"].string();
         size_t len = strlen(str);
         if (str == NULL || len >= MAX_STRING_LEN)
             goto fail;
+
+        vp->length = len;
         memcpy(vp->vp_strvalue, str, len + 1);
         break;
     }
+    case PW_TYPE_OCTETS:
     default: {
-        const XMLByte *b64 = (const XMLByte *)obj["value"].string();
         XMLSize_t len;
+        const XMLByte *b64 = (const XMLByte *)obj["value"].string();
         XMLByte *data = xercesc::Base64::decode(b64, &len);
-        if (data == NULL || len >= MAX_STRING_LEN)
+        if (data == NULL || len >= MAX_STRING_LEN) {
+            delete data;
             goto fail;
+        }
+
+        vp->length = len;
         memcpy(vp->vp_octets, data, len);
         vp->vp_octets[len] = '\0';
+        delete data;
         break;
     }
     }
@@ -706,6 +721,12 @@ fail:
         pairbasicfree(vp);
     *pVp = NULL;
     return false;
+}
+
+const char *
+gss_eap_radius_attr_provider::marshallingKey(void) const
+{
+    return "radius";
 }
 
 bool
@@ -723,12 +744,16 @@ gss_eap_radius_attr_provider::unmarshallAndInit(const gss_eap_attr_ctx *ctx,
     while (!attr.isnull()) {
         VALUE_PAIR *vp;
 
-        if (!avpImport(&vp, attr))
+        if (!avpUnmarshall(&vp, attr))
             return false;
 
         *pNext = vp;
         pNext = &vp->next;
+
+        attr = attrs.next();
     }
+
+    obj.dump();
 
     return true;
 }
@@ -737,12 +762,10 @@ DDF
 gss_eap_radius_attr_provider::marshall(void) const
 {
     DDF obj(NULL);
-    DDF attrs(NULL);
-
-    attrs = obj.addmember("attributes").list();
+    DDF attrs = obj.structure().addmember("attributes").list();
 
     for (VALUE_PAIR *vp = m_vps; vp != NULL; vp = vp->next) {
-        DDF attr = avpExport(vp);
+        DDF attr = avpMarshall(vp);
         attrs.add(attr);
     }
 

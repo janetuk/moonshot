@@ -66,6 +66,7 @@ public:
     void releaseAnyNameMapping(gss_buffer_t type_id,
                                gss_any_t input) const;
 
+    const char *marshallingKey(void) const;
     bool unmarshallAndInit(const gss_eap_attr_ctx *manager,
                            DDF &object GSSEAP_UNUSED);
     DDF marshall(void) const;

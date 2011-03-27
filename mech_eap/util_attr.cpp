@@ -266,13 +266,22 @@ gss_eap_attr_ctx::initFromGssContext(const gss_cred_id_t cred,
     return ret;
 }
 
-static const char *
-gssEapDdfAttrTypes[ATTR_TYPE_MAX + 1] = {
-    "radius",
-    "saml-assertion",
-    "saml",
-    "local"
-};
+static DDF
+findSourceForProvider(DDF &sources, const char *key)
+{
+    DDF source = sources.first();
+
+    while (!source.isnull()) {
+        DDF obj = source.getmember(key);
+
+        if (strcmp(key, source.name()) == 0)
+            break;
+
+        source = sources.next();
+    }
+
+    return source;
+}
 
 bool
 gss_eap_attr_ctx::unmarshallAndInit(DDF &obj)
@@ -291,34 +300,33 @@ gss_eap_attr_ctx::unmarshallAndInit(DDF &obj)
 
     DDF sources = obj["sources"];
 
+    /* Initialize providers from serialized state */
     for (type = ATTR_TYPE_MIN; type <= ATTR_TYPE_MAX; type++) {
         if (!providerEnabled(type)) {
             releaseProvider(type);
             continue;
         }
 
-        DDF providerObj = sources[gssEapDdfAttrTypes[type]];
-        if (providerObj.isempty())
+        gss_eap_attr_provider *provider = m_providers[type];
+        const char *key = provider->marshallingKey();
+        if (key == NULL)
             continue;
 
-        gss_eap_attr_provider *provider = m_providers[type];
-
-        ret = provider->unmarshallAndInit(this, providerObj);
-        if (ret == false) {
+        DDF source = findSourceForProvider(sources, key);
+        if (source.isnull() ||
+            !provider->unmarshallAndInit(this, source)) {
             releaseProvider(type);
-            break;
+            return false;
         }
 
         foundSource[type] = true;
     }
 
-    if (ret == false)
-        return ret;
-
+    /* Initialize remaining providers from initialized providers */ 
     for (type = ATTR_TYPE_MIN; type <= ATTR_TYPE_MAX; type++) {
         gss_eap_attr_provider *provider;
 
-        if (foundSource[type])
+        if (foundSource[type] || !providerEnabled(type))
             continue;
 
         provider = m_providers[type];
@@ -328,11 +336,11 @@ gss_eap_attr_ctx::unmarshallAndInit(DDF &obj)
                                            GSS_C_NO_CONTEXT);
         if (ret == false) {
             releaseProvider(type);
-            break;
+            return false;
         }
     }
 
-    return ret;
+    return true;
 }
 
 DDF
@@ -344,21 +352,20 @@ gss_eap_attr_ctx::marshall(void) const
     obj.addmember("version").integer(1);
     obj.addmember("flags").integer(m_flags);
 
-    DDF sources = obj.addmember("sources");
+    DDF sources = obj.addmember("sources").list();
 
     for (i = ATTR_TYPE_MIN; i <= ATTR_TYPE_MAX; i++) {
         gss_eap_attr_provider *provider = m_providers[i];
 
         if (provider == NULL)
-            continue;
+            continue; /* provider not initialised */
 
-        DDF providerObj = provider->marshall();
-        if (!providerObj.isempty()) {
-            const char *type = gssEapDdfAttrTypes[i];
+        const char *key = provider->marshallingKey();
+        if (key == NULL)
+            continue; /* provider does not have state */
 
-            sources.addmember(type).structure().swap(providerObj);
-        } else
-            providerObj.destroy();
+        DDF source = provider->marshall();
+        sources.add(source.name(key));
     }
 
     return obj;
@@ -637,8 +644,6 @@ gss_eap_attr_ctx::exportToBuffer(gss_buffer_t buffer) const
 
     sink << obj;
     std::string str = sink.str();
-
-    printf("%s\n", str.c_str());
 
     duplicateBuffer(str, buffer);
 

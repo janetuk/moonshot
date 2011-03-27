@@ -381,15 +381,20 @@ gss_eap_shib_attr_provider::releaseAnyNameMapping(gss_buffer_t type_id GSSEAP_UN
     delete v;
 }
 
+const char *
+gss_eap_shib_attr_provider::marshallingKey(void) const
+{
+    return "local";
+}
+
 DDF
 gss_eap_shib_attr_provider::marshall(void) const
 {
     DDF obj(NULL);
-    DDF attrs(NULL);
 
     obj.addmember("authenticated").integer(m_authenticated);
 
-    attrs = obj.addmember("attributes").list();
+    DDF attrs = obj.addmember("attributes").list();
     for (vector<Attribute*>::const_iterator a = m_attributes.begin();
          a != m_attributes.end(); ++a) {
         DDF attr = (*a)->marshall();

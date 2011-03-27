@@ -304,19 +304,6 @@ gss_eap_saml_assertion_provider::releaseAnyNameMapping(gss_buffer_t type_id GSSE
     delete ((saml2::Assertion *)input);
 }
 
-DDF
-gss_eap_saml_assertion_provider::marshall(void) const
-{
-    return DDF(NULL);
-}
-
-bool
-gss_eap_saml_assertion_provider::unmarshallAndInit(const gss_eap_attr_ctx *ctx GSSEAP_UNUSED,
-                                                   DDF &object GSSEAP_UNUSED)
-{
-    return false;
-}
-
 bool
 gss_eap_saml_assertion_provider::init(void)
 {
@@ -681,19 +668,6 @@ void
 gss_eap_saml_attr_provider::releaseAnyNameMapping(gss_buffer_t type_id GSSEAP_UNUSED,
                                                   gss_any_t input GSSEAP_UNUSED) const
 {
-}
-
-DDF
-gss_eap_saml_attr_provider::marshall(void) const
-{
-    return DDF(NULL);
-}
-
-bool
-gss_eap_saml_attr_provider::unmarshallAndInit(const gss_eap_attr_ctx *ctx GSSEAP_UNUSED,
-                                              DDF &object GSSEAP_UNUSED)
-{
-    return false;
 }
 
 bool

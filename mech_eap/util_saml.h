@@ -74,9 +74,16 @@ public:
     void releaseAnyNameMapping(gss_buffer_t type_id,
                                gss_any_t input) const;
 
-    bool unmarshallAndInit(const gss_eap_attr_ctx *manager,
-                           DDF &object GSSEAP_UNUSED);
-    DDF marshall(void) const;
+    const char *marshallingKey(void) const {
+        return NULL;
+    }
+    bool unmarshallAndInit(const gss_eap_attr_ctx *manager GSSEAP_UNUSED,
+                           DDF &object GSSEAP_UNUSED) {
+        return false;
+    }
+    DDF marshall(void) const {
+        return DDF(NULL);
+    }
 
     opensaml::saml2::Assertion *initAssertion(void);
 
@@ -129,9 +136,16 @@ public:
     void releaseAnyNameMapping(gss_buffer_t type_id,
                                gss_any_t input) const;
 
-    bool unmarshallAndInit(const gss_eap_attr_ctx *manager,
-                           DDF &object GSSEAP_UNUSED);
-    DDF marshall(void) const;
+    const char *marshallingKey(void) const {
+        return NULL;
+    }
+    bool unmarshallAndInit(const gss_eap_attr_ctx *manager GSSEAP_UNUSED,
+                           DDF &object GSSEAP_UNUSED) {
+        return false;
+    }
+    DDF marshall(void) const {
+        return DDF(NULL);
+    }
 
     bool getAttribute(const gss_buffer_t attr,
                       int *authenticated,
