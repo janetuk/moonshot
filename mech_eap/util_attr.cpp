@@ -333,6 +333,9 @@ gss_eap_attr_ctx::initFromBuffer(const gss_buffer_t buffer)
         didInit[type] = true;
     }
 
+    if (ret == false)
+        return ret;
+
     /*
      * The call the initFromGssContext methods for attribute
      * providers that can initialize themselves from other
@@ -341,7 +344,7 @@ gss_eap_attr_ctx::initFromBuffer(const gss_buffer_t buffer)
     for (type = ATTR_TYPE_MIN; type <= ATTR_TYPE_MAX; type++) {
         gss_eap_attr_provider *provider;
 
-        if (didInit[type])
+        if (didInit[type] || !providerEnabled(type))
             continue;
 
         provider = m_providers[type];
@@ -351,11 +354,11 @@ gss_eap_attr_ctx::initFromBuffer(const gss_buffer_t buffer)
                                            GSS_C_NO_CONTEXT);
         if (ret == false) {
             releaseProvider(type);
-            break;
+            return false;
         }
     }
 
-    return ret;
+    return true;
 }
 
 gss_eap_attr_ctx::~gss_eap_attr_ctx(void)
