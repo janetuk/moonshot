@@ -7,4 +7,5 @@ shibboleth/sp
 shibboleth/resolver
 libradsec/lib
 libeap
+jansson
 mech_eap
