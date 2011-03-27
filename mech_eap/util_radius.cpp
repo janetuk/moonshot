@@ -753,8 +753,6 @@ gss_eap_radius_attr_provider::unmarshallAndInit(const gss_eap_attr_ctx *ctx,
         attr = attrs.next();
     }
 
-    obj.dump();
-
     return true;
 }
 
