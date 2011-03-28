@@ -38,7 +38,9 @@
 
 #include <typeinfo>
 #include <string>
+#include <sstream>
 #include <exception>
+#include <stdexcept>
 #include <new>
 
 /* lazy initialisation */
@@ -273,58 +275,27 @@ gss_eap_attr_ctx::initFromGssContext(const gss_cred_id_t cred,
     return ret;
 }
 
-#define UPDATE_REMAIN(n)    do {                \
-        p += (n);                               \
-        remain -= (n);                          \
-    } while (0)
-
-#define CHECK_REMAIN(n)     do {                \
-        if (remain < (n)) {                     \
-            return false;                       \
-        }                                       \
-    } while (0)
-
-/*
- * Initialize a context from an exported context or name token
- */
 bool
-gss_eap_attr_ctx::initFromBuffer(const gss_buffer_t buffer)
+gss_eap_attr_ctx::initWithJsonObject(JSONObject &obj)
 {
     bool ret = false;
-    size_t remain = buffer->length;
-    unsigned char *p = (unsigned char *)buffer->value;
-    bool didInit[ATTR_TYPE_MAX + 1];
+    bool foundSource[ATTR_TYPE_MAX + 1];
     unsigned int type;
 
     for (type = ATTR_TYPE_MIN; type <= ATTR_TYPE_MAX; type++)
-        didInit[type] = false;
+        foundSource[type] = false;
 
-    /* flags */
-    CHECK_REMAIN(4);
-    m_flags = load_uint32_be(p);
-    UPDATE_REMAIN(4);
+    if (obj["version"].integer() != 1)
+        return false;
 
-    while (remain) {
-        OM_uint32 type;
-        gss_buffer_desc providerToken;
+    m_flags = obj["flags"].integer();
+
+    JSONObject sources = obj["sources"];
+
+    /* Initialize providers from serialized state */
+    for (type = ATTR_TYPE_MIN; type <= ATTR_TYPE_MAX; type++) {
         gss_eap_attr_provider *provider;
-
-        /* TLV encoding of provider type, length, value */
-        CHECK_REMAIN(4);
-        type = load_uint32_be(p);
-        UPDATE_REMAIN(4);
-
-        CHECK_REMAIN(4);
-        providerToken.length = load_uint32_be(p);
-        UPDATE_REMAIN(4);
-
-        CHECK_REMAIN(providerToken.length);
-        providerToken.value = p;
-        UPDATE_REMAIN(providerToken.length);
-
-        if (type < ATTR_TYPE_MIN || type > ATTR_TYPE_MAX ||
-            didInit[type])
-            return false;
+        const char *key;
 
         if (!providerEnabled(type)) {
             releaseProvider(type);
@@ -332,27 +303,25 @@ gss_eap_attr_ctx::initFromBuffer(const gss_buffer_t buffer)
         }
 
         provider = m_providers[type];
+        key = provider->name();
+        if (key == NULL)
+            continue;
 
-        ret = provider->initFromBuffer(this, &providerToken);
-        if (ret == false) {
+        JSONObject source = sources.get(key);
+        if (!source.isnull() &&
+            !provider->initWithJsonObject(this, source)) {
             releaseProvider(type);
-            break;
+            return false;
         }
-        didInit[type] = true;
+
+        foundSource[type] = true;
     }
 
-    if (ret == false)
-        return ret;
-
-    /*
-     * The call the initFromGssContext methods for attribute
-     * providers that can initialize themselves from other
-     * providers.
-     */
+    /* Initialize remaining providers from initialized providers */
     for (type = ATTR_TYPE_MIN; type <= ATTR_TYPE_MAX; type++) {
         gss_eap_attr_provider *provider;
 
-        if (didInit[type] || !providerEnabled(type))
+        if (foundSource[type] || !providerEnabled(type))
             continue;
 
         provider = m_providers[type];
@@ -367,6 +336,62 @@ gss_eap_attr_ctx::initFromBuffer(const gss_buffer_t buffer)
     }
 
     return true;
+}
+
+JSONObject
+gss_eap_attr_ctx::jsonRepresentation(void) const
+{
+    JSONObject obj, sources;
+    unsigned int i;
+
+    obj.set("version", 1);
+    obj.set("flags", m_flags);
+
+    for (i = ATTR_TYPE_MIN; i <= ATTR_TYPE_MAX; i++) {
+        gss_eap_attr_provider *provider;
+        const char *key;
+
+        provider = m_providers[i];
+        if (provider == NULL)
+            continue; /* provider not initialised */
+
+        key = provider->name();
+        if (key == NULL)
+            continue; /* provider does not have state */
+
+        JSONObject source = provider->jsonRepresentation();
+        sources.set(key, source);
+    }
+
+    obj.set("sources", sources);
+
+    return obj;
+}
+
+/*
+ * Initialize a context from an exported context or name token
+ */
+bool
+gss_eap_attr_ctx::initFromBuffer(const gss_buffer_t buffer)
+{
+    OM_uint32 major, minor;
+    bool ret;
+    char *s;
+    json_error_t error;
+
+    major = bufferToString(&minor, buffer, &s);
+    if (GSS_ERROR(major))
+        return false;
+
+    JSONObject obj = JSONObject::load(s, 0, &error);
+    if (!obj.isnull()) {
+        ret = initWithJsonObject(obj);
+    } else
+        ret = false;
+
+    GSSEAP_FREE(s);
+
+    return ret;
 }
 
 gss_eap_attr_ctx::~gss_eap_attr_ctx(void)
@@ -502,10 +527,8 @@ gss_eap_attr_ctx::getAttributeTypes(gss_buffer_set_t *attrs)
     unsigned int i;
 
     major = gss_create_empty_buffer_set(&minor, attrs);
-    if (GSS_ERROR(major)) {
+    if (GSS_ERROR(major))
         throw new std::bad_alloc;
-        return false;
-    }
 
     args.attrs = *attrs;
 
@@ -601,51 +624,19 @@ gss_eap_attr_ctx::releaseAnyNameMapping(gss_buffer_t type_id,
 void
 gss_eap_attr_ctx::exportToBuffer(gss_buffer_t buffer) const
 {
-    OM_uint32 tmpMinor;
-    gss_buffer_desc providerTokens[ATTR_TYPE_MAX + 1];
-    size_t length = 4; /* m_flags */
-    unsigned char *p;
-    unsigned int i;
+    OM_uint32 minor;
+    char *s;
 
-    for (i = ATTR_TYPE_MIN; i <= ATTR_TYPE_MAX; i++) {
-        providerTokens[i].length = 0;
-        providerTokens[i].value = NULL;
-    }
+    JSONObject obj = jsonRepresentation();
 
-    for (i = ATTR_TYPE_MIN; i <= ATTR_TYPE_MAX; i++) {
-        gss_eap_attr_provider *provider = m_providers[i];
+#if 0
+    obj.dump(stdout, JSON_INDENT(3));
+#endif
 
-        if (provider == NULL)
-            continue;
+    s = obj.dump(JSON_COMPACT);
 
-        provider->exportToBuffer(&providerTokens[i]);
-
-        if (providerTokens[i].value != NULL)
-            length += 8 + providerTokens[i].length;
-    }
-
-    buffer->length = length;
-    buffer->value = GSSEAP_MALLOC(length);
-    if (buffer->value == NULL)
+    if (GSS_ERROR(makeStringBuffer(&minor, s, buffer)))
         throw new std::bad_alloc;
-
-    p = (unsigned char *)buffer->value;
-    store_uint32_be(m_flags, p);
-    p += 4;
-
-    for (i = ATTR_TYPE_MIN; i <= ATTR_TYPE_MAX; i++) {
-        if (providerTokens[i].value == NULL)
-            continue;
-
-        store_uint32_be(i, p);
-        p += 4;
-        store_uint32_be(providerTokens[i].length, p);
-        p += 4;
-        memcpy(p, providerTokens[i].value, providerTokens[i].length);
-        p += providerTokens[i].length;
-
-        gss_release_buffer(&tmpMinor, &providerTokens[i]);
-    }
 }
 
 /*
@@ -1145,12 +1136,10 @@ gssEapCreateAttrContext(OM_uint32 *minor,
     major = GSS_S_FAILURE;
 
     try {
-        ctx = new gss_eap_attr_ctx();
+        *pAttrContext = ctx = new gss_eap_attr_ctx();
         if (ctx->initFromGssContext(gssCred, gssCtx)) {
             *minor = 0;
             major = GSS_S_COMPLETE;
-        } else {
-            delete ctx;
         }
     } catch (std::exception &e) {
         if (ctx != NULL)
@@ -1158,8 +1147,10 @@ gssEapCreateAttrContext(OM_uint32 *minor,
     }
 
     if (major == GSS_S_COMPLETE) {
-        *pAttrContext = ctx;
         *pExpiryTime = ctx->getExpiryTime();
+    } else {
+        delete ctx;
+        *pAttrContext = NULL;
     }
 
     return major;

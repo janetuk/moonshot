@@ -264,6 +264,13 @@ gssEapSaveStatusInfo(OM_uint32 minor, const char *format, ...);
 #define IS_WIRE_ERROR(err)              ((err) > GSSEAP_RESERVED && \
                                          (err) <= GSSEAP_RADIUS_PROT_FAILURE)
 
+/* export_sec_context.c */
+OM_uint32
+gssEapExportSecContext(OM_uint32 *minor,
+                       gss_ctx_id_t ctx,
+                       gss_buffer_t token);
+
+
 #ifdef __cplusplus
 }
 #endif

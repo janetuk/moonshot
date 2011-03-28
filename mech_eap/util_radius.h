@@ -67,10 +67,10 @@ public:
                                gss_any_t input) const;
 
     const char *prefix(void) const;
-
-    void exportToBuffer(gss_buffer_t buffer) const;
-    bool initFromBuffer(const gss_eap_attr_ctx *ctx,
-                        const gss_buffer_t buffer);
+    const char *name(void) const;
+    bool initWithJsonObject(const gss_eap_attr_ctx *manager,
+                           JSONObject &obj);
+    JSONObject jsonRepresentation(void) const;
 
     bool getAttribute(uint32_t attribute,
                       int *authenticated,

@@ -50,8 +50,12 @@ exportPartialRadiusContext(OM_uint32 *minor,
     if (ctx->acceptorCtx.radConn != NULL) {
         if (rs_conn_get_current_peer(ctx->acceptorCtx.radConn,
                                      serverBuf, sizeof(serverBuf)) != 0) {
+#if 0
             return gssEapRadiusMapError(minor,
                                         rs_err_conn_pop(ctx->acceptorCtx.radConn));
+#else
+            serverBuf[0] = '\0'; /* not implemented yet */
+#endif
         }
         serverLen = strlen(serverBuf);
     }
@@ -95,7 +99,7 @@ cleanup:
     return major;
 }
 
-static OM_uint32
+OM_uint32
 gssEapExportSecContext(OM_uint32 *minor,
                        gss_ctx_id_t ctx,
                        gss_buffer_t token)
@@ -124,6 +128,7 @@ gssEapExportSecContext(OM_uint32 *minor,
         if (GSS_ERROR(major))
             goto cleanup;
     }
+
     if (ctx->acceptorName != GSS_C_NO_NAME) {
         major = gssEapExportNameInternal(minor, ctx->acceptorName,
                                          &acceptorName,
@@ -136,10 +141,9 @@ gssEapExportSecContext(OM_uint32 *minor,
      * The partial context is only transmitted for unestablished acceptor
      * contexts.
      */
-    if (!CTX_IS_INITIATOR(ctx) &&
-        !CTX_IS_ESTABLISHED(ctx) &&
-        ((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0)) {
-        major = exportPartialRadiusContext(minor, ctx, &partialCtx);
+    if (!CTX_IS_INITIATOR(ctx) && !CTX_IS_ESTABLISHED(ctx) &&
+        (ctx->flags & CTX_FLAG_KRB_REAUTH) == 0) {
+        major = gssEapExportPartialContext(minor, ctx, &partialCtx);
         if (GSS_ERROR(major))
             goto cleanup;
     }

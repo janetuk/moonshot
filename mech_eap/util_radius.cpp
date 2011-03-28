@@ -503,7 +503,7 @@ gssEapRadiusAddAvp(OM_uint32 *minor,
         VALUE_PAIR *vp;
         size_t n = remain;
 
-	/*
+        /*
          * There's an extra byte of padding; RADIUS AVPs can only
          * be 253 octets.
          */
@@ -619,72 +619,52 @@ gssEapRadiusAttrProviderFinalize(OM_uint32 *minor)
     return GSS_S_COMPLETE;
 }
 
-/*
- * Encoding is:
- * 4 octet NBO attribute ID | 4 octet attribute length | attribute data
- */
-static size_t
-avpSize(const VALUE_PAIR *vp)
+static JSONObject
+avpToJson(const VALUE_PAIR *vp)
 {
-    size_t size = 4 + 1;
+    JSONObject obj;
 
-    if (vp != NULL)
-        size += vp->length;
-
-    return size;
-}
-
-static bool
-avpExport(const VALUE_PAIR *vp,
-          unsigned char **pBuffer,
-          size_t *pRemain)
-{
-    unsigned char *p = *pBuffer;
-    size_t remain = *pRemain;
-
-    assert(remain >= avpSize(vp));
-
-    store_uint32_be(vp->attribute, p);
+    assert(vp->length <= MAX_STRING_LEN);
 
     switch (vp->type) {
     case PW_TYPE_INTEGER:
     case PW_TYPE_IPADDR:
     case PW_TYPE_DATE:
-        p[4] = 4;
-        store_uint32_be(vp->lvalue, p + 5);
+        obj.set("value", vp->lvalue);
         break;
-    default:
-        assert(vp->length <= MAX_STRING_LEN);
-        p[4] = (uint8_t)vp->length;
-        memcpy(p + 5, vp->vp_octets, vp->length);
+    case PW_TYPE_STRING:
+        obj.set("value", vp->vp_strvalue);
+        break;
+    default: {
+        char *b64;
+
+        if (base64Encode(vp->vp_octets, vp->length, &b64) < 0)
+            throw new std::bad_alloc;
+
+        obj.set("value", b64);
+        GSSEAP_FREE(b64);
         break;
     }
+    }
 
-    *pBuffer += 5 + p[4];
-    *pRemain -= 5 + p[4];
+    obj.set("type", vp->attribute);
 
-    return true;
-
+    return obj;
 }
 
 static bool
-avpImport(VALUE_PAIR **pVp,
-          unsigned char **pBuffer,
-          size_t *pRemain)
+jsonToAvp(VALUE_PAIR **pVp, JSONObject &obj)
 {
-    unsigned char *p = *pBuffer;
-    size_t remain = *pRemain;
     VALUE_PAIR *vp = NULL;
     DICT_ATTR *da;
     uint32_t attrid;
 
-    if (remain < avpSize(NULL))
+    JSONObject type = obj["type"];
+    JSONObject value = obj["value"];
+    if (type.isnull() || value.isnull())
         goto fail;
 
-    attrid = load_uint32_be(p);
-    p += 4;
-    remain -= 4;
-
+    attrid = type.integer();
     da = dict_attrbyvalue(attrid);
     if (da != NULL) {
         vp = pairalloc(da);
@@ -696,40 +676,45 @@ avpImport(VALUE_PAIR **pVp,
         goto fail;
     }
 
-    if (remain < p[0])
-        goto fail;
-
     switch (vp->type) {
     case PW_TYPE_INTEGER:
     case PW_TYPE_IPADDR:
     case PW_TYPE_DATE:
-        if (p[0] != 4)
-            goto fail;
-
         vp->length = 4;
-        vp->lvalue = load_uint32_be(p + 1);
-        p += 5;
-        remain -= 5;
+        vp->lvalue = value.integer();
         break;
-    case PW_TYPE_STRING:
-    default:
-        if (p[0] >= MAX_STRING_LEN)
+    case PW_TYPE_STRING: {
+        const char *str = value.string();
+        size_t len;
+
+        if (str == NULL || (len = strlen(str)) >= MAX_STRING_LEN)
             goto fail;
 
-        vp->length = (uint32_t)p[0];
-        memcpy(vp->vp_octets, p + 1, vp->length);
-
-        if (vp->type == PW_TYPE_STRING)
-            vp->vp_strvalue[vp->length] = '\0';
-
-        p += 1 + vp->length;
-        remain -= 1 + vp->length;
+        vp->length = len;
+        memcpy(vp->vp_strvalue, str, len + 1);
         break;
+    }
+    case PW_TYPE_OCTETS:
+    default: {
+        const char *str = value.string();
+        int len;
+
+        /* this optimization requires base64Decode only understand packed encoding */
+        if (str == NULL ||
+            strlen(str) >= BASE64_EXPAND(MAX_STRING_LEN))
+            goto fail;
+
+        len = base64Decode(str, vp->vp_octets);
+        if (len < 0)
+            goto fail;
+
+        vp->length = len;
+        vp->vp_octets[len] = '\0';
+        break;
+    }
     }
 
     *pVp = vp;
-    *pBuffer = p;
-    *pRemain = remain;
 
     return true;
 
@@ -740,26 +725,34 @@ fail:
     return false;
 }
 
-bool
-gss_eap_radius_attr_provider::initFromBuffer(const gss_eap_attr_ctx *ctx,
-                                             const gss_buffer_t buffer)
+const char *
+gss_eap_radius_attr_provider::name(void) const
 {
-    unsigned char *p = (unsigned char *)buffer->value;
-    size_t remain = buffer->length;
+    return "radius";
+}
+
+bool
+gss_eap_radius_attr_provider::initWithJsonObject(const gss_eap_attr_ctx *ctx,
+                                                 JSONObject &obj)
+{
     VALUE_PAIR **pNext = &m_vps;
 
-    if (!gss_eap_attr_provider::initFromBuffer(ctx, buffer))
+    if (!gss_eap_attr_provider::initWithJsonObject(ctx, obj))
         return false;
 
-    do {
-        VALUE_PAIR *attr;
+    JSONObject attrs = obj["attributes"];
+    size_t nelems = attrs.size();
 
-        if (!avpImport(&attr, &p, &remain))
+    for (size_t i = 0; i < nelems; i++) {
+        JSONObject attr = attrs[i];
+        VALUE_PAIR *vp;
+
+        if (!jsonToAvp(&vp, attr))
             return false;
 
-        *pNext = attr;
-        pNext = &attr->next;
-    } while (remain != 0);
+        *pNext = vp;
+        pNext = &vp->next;
+    }
 
     return true;
 }
@@ -770,31 +763,19 @@ gss_eap_radius_attr_provider::prefix(void) const
     return "urn:ietf:params:gss-eap:radius-avp";
 }
 
-void
-gss_eap_radius_attr_provider::exportToBuffer(gss_buffer_t buffer) const
+JSONObject
+gss_eap_radius_attr_provider::jsonRepresentation(void) const
 {
-    VALUE_PAIR *vp;
-    unsigned char *p;
-    size_t remain = 0;
+    JSONObject obj, attrs = JSONObject::array();
 
-    for (vp = m_vps; vp != NULL; vp = vp->next) {
-        remain += avpSize(vp);
+    for (VALUE_PAIR *vp = m_vps; vp != NULL; vp = vp->next) {
+        JSONObject attr = avpToJson(vp);
+        attrs.append(attr);
     }
 
-    buffer->value = GSSEAP_MALLOC(remain);
-    if (buffer->value == NULL) {
-        throw new std::bad_alloc;
-        return;
-    }
-    buffer->length = remain;
+    obj.set("attributes", attrs);
 
-    p = (unsigned char *)buffer->value;
-
-    for (vp = m_vps; vp != NULL; vp = vp->next) {
-        avpExport(vp, &p, &remain);
-    }
-
-    assert(remain == 0);
+    return obj;
 }
 
 time_t

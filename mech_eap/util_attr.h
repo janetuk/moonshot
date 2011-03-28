@@ -41,6 +41,8 @@
 #include <string>
 #include <new>
 
+using namespace gss_eap_util;
+
 struct gss_eap_attr_provider;
 struct gss_eap_attr_ctx;
 
@@ -121,24 +123,34 @@ public:
     {
         return NULL;
     }
+
     virtual void releaseAnyNameMapping(gss_buffer_t type_id GSSEAP_UNUSED,
                                        gss_any_t input GSSEAP_UNUSED) const
     {
     }
 
+    /* prefix to be prepended to attributes emitted by gss_get_name_attribute */
     virtual const char *prefix(void) const
     {
         return NULL;
     }
 
-    virtual void exportToBuffer(gss_buffer_t buffer GSSEAP_UNUSED) const
+    /* optional key for storing JSON dictionary */
+    virtual const char *name(void) const
     {
+        return NULL;
     }
 
-    virtual bool initFromBuffer(const gss_eap_attr_ctx *manager,
-                                const gss_buffer_t buffer GSSEAP_UNUSED)
+    virtual bool initWithJsonObject(const gss_eap_attr_ctx *manager,
+                                    JSONObject &object GSSEAP_UNUSED)
     {
         return initWithManager(manager);
+    }
+
+
+    virtual JSONObject jsonRepresentation(void) const
+    {
+        return JSONObject::null();
     }
 
     virtual time_t getExpiryTime(void) const { return 0; }
@@ -241,6 +253,9 @@ private:
 
     unsigned int attributePrefixToType(const gss_buffer_t prefix) const;
     gss_buffer_desc attributeTypeToPrefix(unsigned int type) const;
+
+    bool initWithJsonObject(JSONObject &object);
+    JSONObject jsonRepresentation(void) const;
 
     gss_eap_attr_provider *getPrimaryProvider(void) const;
 

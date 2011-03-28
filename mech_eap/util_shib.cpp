@@ -70,6 +70,7 @@ using namespace std;
 
 gss_eap_shib_attr_provider::gss_eap_shib_attr_provider(void)
 {
+    m_initialized = false;
     m_authenticated = false;
 }
 
@@ -99,53 +100,7 @@ gss_eap_shib_attr_provider::initFromExistingContext(const gss_eap_attr_ctx *mana
         m_authenticated = shib->authenticated();
     }
 
-    return true;
-}
-
-bool
-addRadiusAttribute(const gss_eap_attr_ctx *manager,
-                   const gss_eap_attr_provider *provider,
-                   const gss_buffer_t attribute,
-                   void *data)
-{
-    const gss_eap_radius_attr_provider *radius;
-    const gss_eap_shib_attr_provider *shib;
-    int authenticated, complete, more = -1;
-    vector <string> attributeIds(1);
-    SimpleAttribute *a;
-
-    radius = static_cast<const gss_eap_radius_attr_provider *>(provider);
-    shib = static_cast<const gss_eap_shib_attr_provider *>(data);
-
-    assert(radius != NULL && shib != NULL);
-
-    string attributeName =
-        manager->composeAttributeName(ATTR_TYPE_RADIUS, attribute);
-
-    attributeIds.push_back(attributeName);
-    a = new SimpleAttribute(attributeIds);
-    if (a == NULL)
-        return false;
-
-    while (more != 0) {
-        gss_buffer_desc value = GSS_C_EMPTY_BUFFER;
-        OM_uint32 minor;
-
-        if (!radius->getAttribute(attribute,
-                                  &authenticated,
-                                  &complete,
-                                  &value,
-                                  NULL,
-                                  &more))
-            return false;
-
-        string attributeValue((char *)value.value, value.length);
-        a->getValues().push_back(attributeValue);
-
-        gss_release_buffer(&minor, &value);
-    }
-
-    shib->getAttributes().push_back(a);
+    m_initialized = true;
 
     return true;
 }
@@ -156,18 +111,17 @@ gss_eap_shib_attr_provider::initFromGssContext(const gss_eap_attr_ctx *manager,
                                                const gss_ctx_id_t gssCtx)
 {
     const gss_eap_saml_assertion_provider *saml;
-    const gss_eap_radius_attr_provider *radius;
+    gss_buffer_desc exportedCtx = GSS_C_EMPTY_BUFFER;
+    OM_uint32 major, minor;
+
 #if 0
     gss_buffer_desc nameBuf = GSS_C_EMPTY_BUFFER;
-    OM_uint32 minor;
 #endif
     if (!gss_eap_attr_provider::initFromGssContext(manager, gssCred, gssCtx))
         return false;
 
     saml = static_cast<const gss_eap_saml_assertion_provider *>
         (m_manager->getProvider(ATTR_TYPE_SAML_ASSERTION));
-    radius = static_cast<const gss_eap_radius_attr_provider *>
-        (m_manager->getProvider(ATTR_TYPE_RADIUS));
 
     auto_ptr<ShibbolethResolver> resolver(ShibbolethResolver::create());
 
@@ -185,17 +139,15 @@ gss_eap_shib_attr_provider::initFromGssContext(const gss_eap_attr_ctx *manager,
     }
 #endif
 
-    m_authenticated = false;
-
-    if (radius != NULL) {
-        radius->getAttributeTypes(addRadiusAttribute, (void *)this);
-        m_authenticated = radius->authenticated();
+    major = gssEapExportSecContext(&minor, gssCtx, &exportedCtx);
+    if (major == GSS_S_COMPLETE) {
+        resolver->addToken(&exportedCtx);
+        gss_release_buffer(&minor, &exportedCtx);
     }
 
     if (saml != NULL && saml->getAssertion() != NULL) {
         resolver->addToken(saml->getAssertion());
-        if (m_authenticated)
-            m_authenticated = saml->authenticated();
+        m_authenticated = saml->authenticated();
     }
 
     try {
@@ -208,6 +160,8 @@ gss_eap_shib_attr_provider::initFromGssContext(const gss_eap_attr_ctx *manager,
 #endif
     }
 
+    m_initialized = true;
+
     return true;
 }
 
@@ -215,6 +169,8 @@ ssize_t
 gss_eap_shib_attr_provider::getAttributeIndex(const gss_buffer_t attr) const
 {
     int i = 0;
+
+    assert(m_initialized);
 
     for (vector<Attribute *>::const_iterator a = m_attributes.begin();
          a != m_attributes.end();
@@ -242,6 +198,8 @@ gss_eap_shib_attr_provider::setAttribute(int complete GSSEAP_UNUSED,
     vector <string> ids(1, attrStr);
     SimpleAttribute *a = new SimpleAttribute(ids);
 
+    assert(m_initialized);
+
     if (value->length != 0) {
         string valueStr((char *)value->value, value->length);
 
@@ -259,6 +217,8 @@ gss_eap_shib_attr_provider::deleteAttribute(const gss_buffer_t attr)
 {
     int i;
 
+    assert(m_initialized);
+
     i = getAttributeIndex(attr);
     if (i >= 0)
         m_attributes.erase(m_attributes.begin() + i);
@@ -272,6 +232,8 @@ bool
 gss_eap_shib_attr_provider::getAttributeTypes(gss_eap_attr_enumeration_cb addAttribute,
                                               void *data) const
 {
+    assert(m_initialized);
+
     for (vector<Attribute*>::const_iterator a = m_attributes.begin();
         a != m_attributes.end();
         ++a)
@@ -292,6 +254,8 @@ const Attribute *
 gss_eap_shib_attr_provider::getAttribute(const gss_buffer_t attr) const
 {
     const Attribute *ret = NULL;
+
+    assert(m_initialized);
 
     for (vector<Attribute *>::const_iterator a = m_attributes.begin();
          a != m_attributes.end();
@@ -324,6 +288,8 @@ gss_eap_shib_attr_provider::getAttribute(const gss_buffer_t attr,
     const Attribute *shibAttr = NULL;
     gss_buffer_desc buf;
     int nvalues, i = *more;
+
+    assert(m_initialized);
 
     *more = 0;
 
@@ -366,6 +332,8 @@ gss_eap_shib_attr_provider::mapToAny(int authenticated,
 {
     gss_any_t output;
 
+    assert(m_initialized);
+
     if (authenticated && !m_authenticated)
         return (gss_any_t)NULL;
 
@@ -380,6 +348,8 @@ void
 gss_eap_shib_attr_provider::releaseAnyNameMapping(gss_buffer_t type_id GSSEAP_UNUSED,
                                                   gss_any_t input) const
 {
+    assert(m_initialized);
+
     vector <Attribute *> *v = ((vector <Attribute *> *)input);
     delete v;
 }
@@ -390,67 +360,57 @@ gss_eap_shib_attr_provider::prefix(void) const
     return NULL;
 }
 
-void
-gss_eap_shib_attr_provider::exportToBuffer(gss_buffer_t buffer) const
+const char *
+gss_eap_shib_attr_provider::name(void) const
 {
-    DDF obj(NULL);
-    DDF attrs(NULL);
+    return "local";
+}
 
-    buffer->length = 0;
-    buffer->value = NULL;
+JSONObject
+gss_eap_shib_attr_provider::jsonRepresentation(void) const
+{
+    JSONObject obj;
 
-    obj.addmember("version").integer(1);
-    obj.addmember("authenticated").integer(m_authenticated);
+    if (m_initialized == false)
+        return obj; /* don't export incomplete context */
 
-    attrs = obj.addmember("attributes").list();
+    JSONObject attrs = JSONObject::array();
+
     for (vector<Attribute*>::const_iterator a = m_attributes.begin();
          a != m_attributes.end(); ++a) {
         DDF attr = (*a)->marshall();
-        attrs.add(attr);
+        JSONObject jobj(attr);
+        attrs.append(jobj);
     }
 
-    ostringstream sink;
-    sink << obj;
-    string str = sink.str();
+    obj.set("attributes", attrs);
 
-    duplicateBuffer(str, buffer);
+    obj.set("authenticated", m_authenticated);
 
-    attrs.destroy();
+    return obj;
 }
 
 bool
-gss_eap_shib_attr_provider::initFromBuffer(const gss_eap_attr_ctx *ctx,
-                                           const gss_buffer_t buffer)
+gss_eap_shib_attr_provider::initWithJsonObject(const gss_eap_attr_ctx *ctx,
+                                               JSONObject &obj)
 {
-    if (!gss_eap_attr_provider::initFromBuffer(ctx, buffer))
+    if (!gss_eap_attr_provider::initWithJsonObject(ctx, obj))
         return false;
-
-    if (buffer->length == 0)
-        return true;
 
     assert(m_authenticated == false);
     assert(m_attributes.size() == 0);
 
-    DDF obj(NULL);
-    string str((const char *)buffer->value, buffer->length);
-    istringstream source(str);
+    JSONObject attrs = obj["attributes"];
+    size_t nelems = attrs.size();
 
-    source >> obj;
-
-    if (obj["version"].integer() != 1)
-        return false;
-
-    m_authenticated = (obj["authenticated"].integer() != 0);
-
-    DDF attrs = obj["attributes"];
-    DDF attr = attrs.first();
-    while (!attr.isnull()) {
+    for (size_t i = 0; i < nelems; i++) {
+        DDF attr = attrs.get(i).ddf();
         Attribute *attribute = Attribute::unmarshall(attr);
         m_attributes.push_back(attribute);
-        attr = attrs.next();
     }
 
-    attrs.destroy();
+    m_authenticated = obj["authenticated"].integer();
+    m_initialized = true;
 
     return true;
 }

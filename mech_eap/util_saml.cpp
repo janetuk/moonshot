@@ -310,20 +310,6 @@ gss_eap_saml_assertion_provider::prefix(void) const
     return "urn:ietf:params:gss-eap:saml-aaa-assertion";
 }
 
-void
-gss_eap_saml_assertion_provider::exportToBuffer(gss_buffer_t buffer) const
-{
-    buffer->length = 0;
-    buffer->value = NULL;
-}
-
-bool
-gss_eap_saml_assertion_provider::initFromBuffer(const gss_eap_attr_ctx *ctx GSSEAP_UNUSED,
-                                                const gss_buffer_t buffer GSSEAP_UNUSED)
-{
-    return false;
-}
-
 bool
 gss_eap_saml_assertion_provider::init(void)
 {
@@ -692,20 +678,6 @@ const char *
 gss_eap_saml_attr_provider::prefix(void) const
 {
     return "urn:ietf:params:gss-eap:saml-attr";
-}
-
-void
-gss_eap_saml_attr_provider::exportToBuffer(gss_buffer_t buffer) const
-{
-    buffer->length = 0;
-    buffer->value = NULL;
-}
-
-bool
-gss_eap_saml_attr_provider::initFromBuffer(const gss_eap_attr_ctx *ctx GSSEAP_UNUSED,
-                                           const gss_buffer_t buffer GSSEAP_UNUSED)
-{
-    return false;
 }
 
 bool

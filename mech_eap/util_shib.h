@@ -77,10 +77,10 @@ public:
                                gss_any_t input) const;
 
     const char *prefix(void) const;
-
-    void exportToBuffer(gss_buffer_t buffer) const;
-    bool initFromBuffer(const gss_eap_attr_ctx *ctx,
-                        const gss_buffer_t buffer);
+    const char *name(void) const;
+    bool initWithJsonObject(const gss_eap_attr_ctx *manager,
+                            JSONObject &obj);
+    JSONObject jsonRepresentation(void) const;
 
     static bool init(void);
     static void finalize(void);
@@ -104,15 +104,10 @@ private:
 
     bool authenticated(void) const { return m_authenticated; }
 
-    friend bool
-    addRadiusAttribute(const gss_eap_attr_provider *source,
-                       const gss_buffer_t attribute,
-                       void *data);
-
+    bool m_initialized;
+    bool m_authenticated;
     std::vector<shibsp::Attribute *> m_attributes;
-    int m_authenticated;
 };
-
 
 extern "C" {
 #endif
