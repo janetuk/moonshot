@@ -143,7 +143,7 @@ gssEapExportSecContext(OM_uint32 *minor,
      */
     if (!CTX_IS_INITIATOR(ctx) && !CTX_IS_ESTABLISHED(ctx) &&
         (ctx->flags & CTX_FLAG_KRB_REAUTH) == 0) {
-        major = gssEapExportPartialContext(minor, ctx, &partialCtx);
+        major = exportPartialRadiusContext(minor, ctx, &partialCtx);
         if (GSS_ERROR(major))
             goto cleanup;
     }
@@ -194,7 +194,7 @@ gssEapExportSecContext(OM_uint32 *minor,
         goto cleanup;
 
     if (!CTX_IS_INITIATOR(ctx) && !CTX_IS_ESTABLISHED(ctx))
-        p = store_buffer(&ctx->conversation, &p, FALSE);
+        p = store_buffer(&ctx->conversation, p, FALSE);
 
     if (partialCtx.value != NULL)
         p = store_buffer(&partialCtx, p, FALSE);
