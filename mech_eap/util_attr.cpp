@@ -55,11 +55,17 @@ gssEapAttrProvidersInitInternal(void)
     assert(gssEapAttrProvidersInitStatus == GSS_S_UNAVAILABLE);
 
     major = gssEapRadiusAttrProviderInit(&minor);
-    if (major == GSS_S_COMPLETE)
-        major = gssEapSamlAttrProvidersInit(&minor);
-    if (major == GSS_S_COMPLETE)
-        major = gssEapLocalAttrProviderInit(&minor);
+    if (GSS_ERROR(major))
+        goto cleanup;
 
+    major = gssEapSamlAttrProvidersInit(&minor);
+    if (GSS_ERROR(major))
+        goto cleanup;
+
+    /* Allow Shibboleth initialization failure to be non-fatal */
+    gssEapLocalAttrProviderInit(&minor);
+
+cleanup:
 #ifdef GSSEAP_DEBUG
     assert(major == GSS_S_COMPLETE);
 #endif
@@ -678,6 +684,10 @@ gss_eap_attr_ctx::mapException(OM_uint32 *minor, std::exception &e) const
     if (typeid(e) == typeid(std::bad_alloc)) {
         *minor = ENOMEM;
         goto cleanup;
+    } else if (typeid(e) == typeid(std::runtime_error)) {
+        major = GSS_S_BAD_NAME;
+        *minor = GSSEAP_BAD_ATTR_TOKEN;
+        goto cleanup;
     }
 
     /* Errors we delegate to providers */
@@ -1010,7 +1020,7 @@ gssEapImportAttrContext(OM_uint32 *minor,
             if (!ctx->initFromBuffer(buffer)) {
                 delete ctx;
                 *minor = GSSEAP_BAD_ATTR_TOKEN;
-                return GSS_S_DEFECTIVE_TOKEN;
+                return GSS_S_BAD_NAME;
             }
             name->attrCtx = ctx;
         } catch (std::exception &e) {
