@@ -1161,9 +1161,11 @@ gssEapCreateAttrContext(OM_uint32 *minor,
         return major;
 
     try {
-        ctx = new gss_eap_attr_ctx();
+        /* Set *pAttrContext here to for reentrancy */
+        *pAttrContext = ctx = new gss_eap_attr_ctx();
 
         if (ctx->initWithGssContext(gssCred, gssCtx)) {
+            *pExpiryTime = ctx->getExpiryTime();
             major = GSS_S_COMPLETE;
             *minor = 0;
         } else {
@@ -1175,13 +1177,10 @@ gssEapCreateAttrContext(OM_uint32 *minor,
             major = ctx->mapException(minor, e);
     }
 
-    if (major == GSS_S_COMPLETE) {
-        *pExpiryTime = ctx->getExpiryTime();
-        *pAttrContext = ctx;
-    }
-
-    if (GSS_ERROR(major))
+    if (GSS_ERROR(major)) {
         delete ctx;
+        *pAttrContext = NULL;
+    }
 
     return major;
 }
