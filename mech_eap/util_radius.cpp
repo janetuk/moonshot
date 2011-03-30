@@ -661,7 +661,8 @@ jsonToAvp(VALUE_PAIR **pVp, JSONObject &obj)
 
     JSONObject type = obj["type"];
     JSONObject value = obj["value"];
-    if (type.isnull() || value.isnull())
+
+    if (!type.isInteger())
         goto fail;
 
     attrid = type.integer();
@@ -669,7 +670,8 @@ jsonToAvp(VALUE_PAIR **pVp, JSONObject &obj)
     if (da != NULL) {
         vp = pairalloc(da);
     } else {
-        vp = paircreate(attrid, PW_TYPE_STRING);
+        /* Assume unknown attributes are octet strings */
+        vp = paircreate(attrid, PW_TYPE_OCTETS);
     }
     if (vp == NULL) {
         throw new std::bad_alloc;
@@ -680,14 +682,20 @@ jsonToAvp(VALUE_PAIR **pVp, JSONObject &obj)
     case PW_TYPE_INTEGER:
     case PW_TYPE_IPADDR:
     case PW_TYPE_DATE:
+        if (!value.isInteger())
+            goto fail;
+
         vp->length = 4;
         vp->lvalue = value.integer();
         break;
     case PW_TYPE_STRING: {
-        const char *str = value.string();
-        size_t len;
+        if (!value.isString())
+            goto fail;
 
-        if (str == NULL || (len = strlen(str)) >= MAX_STRING_LEN)
+        const char *str = value.string();
+        size_t len = strlen(str);
+
+        if (len >= MAX_STRING_LEN)
             goto fail;
 
         vp->length = len;
@@ -696,20 +704,32 @@ jsonToAvp(VALUE_PAIR **pVp, JSONObject &obj)
     }
     case PW_TYPE_OCTETS:
     default: {
+        if (!value.isString())
+            goto fail;
+
         const char *str = value.string();
-        int len;
+        size_t len = strlen(str);
 
         /* this optimization requires base64Decode only understand packed encoding */
-        if (str == NULL ||
-            strlen(str) >= BASE64_EXPAND(MAX_STRING_LEN))
+        if (len >= BASE64_EXPAND(MAX_STRING_LEN))
             goto fail;
 
+        /*
+         * If the attribute is unknown, we don't know its syntax; assume
+         * it is an octet string and, if that fails to decode, a string.
+         */
         len = base64Decode(str, vp->vp_octets);
-        if (len < 0)
-            goto fail;
-
-        vp->length = len;
-        vp->vp_octets[len] = '\0';
+        if (len < 0) {
+            if (da == NULL) {
+                assert(len < MAX_STRING_LEN);
+                vp->length = len;
+                memcpy(vp->vp_strvalue, str, len + 1);
+            } else
+                goto fail;
+        } else {
+            vp->length = len;
+            vp->vp_octets[len] = '\0';
+        }
         break;
     }
     }
