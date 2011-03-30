@@ -40,7 +40,6 @@
 #include <string>
 #include <sstream>
 #include <exception>
-#include <stdexcept>
 #include <new>
 
 /* lazy initialisation */
@@ -220,7 +219,7 @@ gss_eap_attr_ctx::releaseProvider(unsigned int type)
  * Initialize a context from an existing context.
  */
 bool
-gss_eap_attr_ctx::initFromExistingContext(const gss_eap_attr_ctx *manager)
+gss_eap_attr_ctx::initWithExistingContext(const gss_eap_attr_ctx *manager)
 {
     bool ret = true;
 
@@ -236,7 +235,7 @@ gss_eap_attr_ctx::initFromExistingContext(const gss_eap_attr_ctx *manager)
 
         provider = m_providers[i];
 
-        ret = provider->initFromExistingContext(this,
+        ret = provider->initWithExistingContext(this,
                                                 manager->m_providers[i]);
         if (ret == false) {
             releaseProvider(i);
@@ -251,7 +250,7 @@ gss_eap_attr_ctx::initFromExistingContext(const gss_eap_attr_ctx *manager)
  * Initialize a context from a GSS credential and context.
  */
 bool
-gss_eap_attr_ctx::initFromGssContext(const gss_cred_id_t cred,
+gss_eap_attr_ctx::initWithGssContext(const gss_cred_id_t cred,
                                      const gss_ctx_id_t ctx)
 {
     bool ret = true;
@@ -271,7 +270,7 @@ gss_eap_attr_ctx::initFromGssContext(const gss_cred_id_t cred,
 
         provider = m_providers[i];
 
-        ret = provider->initFromGssContext(this, cred, ctx);
+        ret = provider->initWithGssContext(this, cred, ctx);
         if (ret == false) {
             releaseProvider(i);
             break;
@@ -332,7 +331,7 @@ gss_eap_attr_ctx::initWithJsonObject(JSONObject &obj)
 
         provider = m_providers[type];
 
-        ret = provider->initFromGssContext(this,
+        ret = provider->initWithGssContext(this,
                                            GSS_C_NO_CREDENTIAL,
                                            GSS_C_NO_CONTEXT);
         if (ret == false) {
@@ -378,7 +377,7 @@ gss_eap_attr_ctx::jsonRepresentation(void) const
  * Initialize a context from an exported context or name token
  */
 bool
-gss_eap_attr_ctx::initFromBuffer(const gss_buffer_t buffer)
+gss_eap_attr_ctx::initWithBuffer(const gss_buffer_t buffer)
 {
     OM_uint32 major, minor;
     bool ret;
@@ -534,7 +533,7 @@ gss_eap_attr_ctx::getAttributeTypes(gss_buffer_set_t *attrs)
 
     major = gss_create_empty_buffer_set(&minor, attrs);
     if (GSS_ERROR(major))
-        throw new std::bad_alloc;
+        throw std::bad_alloc();
 
     args.attrs = *attrs;
 
@@ -642,7 +641,7 @@ gss_eap_attr_ctx::exportToBuffer(gss_buffer_t buffer) const
     s = obj.dump(JSON_COMPACT);
 
     if (GSS_ERROR(makeStringBuffer(&minor, s, buffer)))
-        throw new std::bad_alloc;
+        throw std::bad_alloc();
 }
 
 /*
@@ -683,12 +682,10 @@ gss_eap_attr_ctx::mapException(OM_uint32 *minor, std::exception &e) const
         major = GSS_S_FAILURE;
         *minor = ENOMEM;
         goto cleanup;
-    } else if (typeid(e) == typeid(std::runtime_error)) {
+    } else if (typeid(e) == typeid(JSONException)) {
         major = GSS_S_BAD_NAME;
         *minor = GSSEAP_BAD_ATTR_TOKEN;
-        goto cleanup;
-    } else if (this == NULL) {
-        major = GSS_S_FAILURE;
+        gssEapSaveStatusInfo(*minor, "%s", e.what());
         goto cleanup;
     }
 
@@ -712,11 +709,6 @@ gss_eap_attr_ctx::mapException(OM_uint32 *minor, std::exception &e) const
     }
 
 cleanup:
-#if 0
-    /* rethrow for now for debugging */
-    throw e;
-#endif
-
     assert(GSS_ERROR(major));
 
     return major;
@@ -1011,29 +1003,38 @@ gssEapImportAttrContext(OM_uint32 *minor,
                         gss_name_t name)
 {
     gss_eap_attr_ctx *ctx = NULL;
+    OM_uint32 major = GSS_S_FAILURE;
 
     assert(name->attrCtx == NULL);
 
     if (GSS_ERROR(gssEapAttrProvidersInit(minor)))
         return GSS_S_UNAVAILABLE;
 
-    if (buffer->length != 0) {
-        try {
-            ctx = new gss_eap_attr_ctx();
+    if (buffer->length == 0)
+        return GSS_S_COMPLETE;
 
-            if (!ctx->initFromBuffer(buffer)) {
-                delete ctx;
-                *minor = GSSEAP_BAD_ATTR_TOKEN;
-                return GSS_S_BAD_NAME;
-            }
+    try {
+        ctx = new gss_eap_attr_ctx();
+
+        if (ctx->initWithBuffer(buffer)) {
             name->attrCtx = ctx;
-        } catch (std::exception &e) {
-            delete ctx;
-            return name->attrCtx->mapException(minor, e);
+            major = GSS_S_COMPLETE;
+            *minor = 0;
+        } else {
+            major = GSS_S_BAD_NAME;
+            *minor = GSSEAP_ATTR_CONTEXT_FAILURE;
         }
+    } catch (std::exception &e) {
+        if (ctx != NULL)
+            major = ctx->mapException(minor, e);
     }
 
-    return GSS_S_COMPLETE;
+    assert(major == GSS_S_COMPLETE || name->attrCtx == NULL);
+
+    if (GSS_ERROR(major))
+        delete ctx;
+
+    return major;
 }
 
 OM_uint32
@@ -1042,26 +1043,37 @@ gssEapDuplicateAttrContext(OM_uint32 *minor,
                            gss_name_t out)
 {
     gss_eap_attr_ctx *ctx = NULL;
+    OM_uint32 major = GSS_S_FAILURE;
 
     assert(out->attrCtx == NULL);
+
+    if (in->attrCtx == NULL) {
+        *minor = 0;
+        return GSS_S_COMPLETE;
+    }
 
     if (GSS_ERROR(gssEapAttrProvidersInit(minor)))
         return GSS_S_UNAVAILABLE;
 
     try {
-        if (in->attrCtx != NULL) {
-            ctx = new gss_eap_attr_ctx();
-            if (!ctx->initFromExistingContext(in->attrCtx)) {
-                delete ctx;
-                *minor = GSSEAP_ATTR_CONTEXT_FAILURE;
-                return GSS_S_FAILURE;
-            }
+        ctx = new gss_eap_attr_ctx();
+
+        if (ctx->initWithExistingContext(in->attrCtx)) {
             out->attrCtx = ctx;
+            major = GSS_S_COMPLETE;
+            *minor = 0;
+        } else {
+            major = GSS_S_FAILURE;
+            *minor = GSSEAP_ATTR_CONTEXT_FAILURE;
         }
     } catch (std::exception &e) {
-        delete ctx;
-        return in->attrCtx->mapException(minor, e);
+        major = in->attrCtx->mapException(minor, e);
     }
+
+    assert(major == GSS_S_COMPLETE || out->attrCtx == NULL);
+
+    if (GSS_ERROR(major))
+        delete ctx;
 
     return GSS_S_COMPLETE;
 }
@@ -1142,18 +1154,21 @@ gssEapCreateAttrContext(OM_uint32 *minor,
 
     assert(gssCtx != GSS_C_NO_CONTEXT);
 
+    *pAttrContext = NULL;
+
     major = gssEapAttrProvidersInit(minor);
     if (GSS_ERROR(major))
         return major;
 
-    *minor = GSSEAP_ATTR_CONTEXT_FAILURE;
-    major = GSS_S_FAILURE;
-
     try {
-        *pAttrContext = ctx = new gss_eap_attr_ctx();
-        if (ctx->initFromGssContext(gssCred, gssCtx)) {
-            *minor = 0;
+        ctx = new gss_eap_attr_ctx();
+
+        if (ctx->initWithGssContext(gssCred, gssCtx)) {
             major = GSS_S_COMPLETE;
+            *minor = 0;
+        } else {
+            major = GSS_S_FAILURE;
+            *minor = GSSEAP_ATTR_CONTEXT_FAILURE;
         }
     } catch (std::exception &e) {
         if (ctx != NULL)
@@ -1162,10 +1177,11 @@ gssEapCreateAttrContext(OM_uint32 *minor,
 
     if (major == GSS_S_COMPLETE) {
         *pExpiryTime = ctx->getExpiryTime();
-    } else {
-        delete ctx;
-        *pAttrContext = NULL;
+        *pAttrContext = ctx;
     }
+
+    if (GSS_ERROR(major))
+        delete ctx;
 
     return major;
 }

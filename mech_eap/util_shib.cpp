@@ -83,12 +83,12 @@ gss_eap_shib_attr_provider::~gss_eap_shib_attr_provider(void)
 }
 
 bool
-gss_eap_shib_attr_provider::initFromExistingContext(const gss_eap_attr_ctx *manager,
+gss_eap_shib_attr_provider::initWithExistingContext(const gss_eap_attr_ctx *manager,
                                                     const gss_eap_attr_provider *ctx)
 {
     const gss_eap_shib_attr_provider *shib;
 
-    if (!gss_eap_attr_provider::initFromExistingContext(manager, ctx)) {
+    if (!gss_eap_attr_provider::initWithExistingContext(manager, ctx)) {
         return false;
     }
 
@@ -130,7 +130,7 @@ exportMechSecContext(OM_uint32 *minor,
     mechContext->value = p = (unsigned char *)GSSEAP_MALLOC(mechContext->length);
     if (mechContext->value == NULL) {
         gss_release_buffer(minor, &exportedCtx);
-        throw new std::bad_alloc;
+        throw std::bad_alloc();
     }
 
     p = store_oid(gssCtx->mechanismUsed, p);
@@ -142,11 +142,11 @@ exportMechSecContext(OM_uint32 *minor,
 }
 
 bool
-gss_eap_shib_attr_provider::initFromGssContext(const gss_eap_attr_ctx *manager,
+gss_eap_shib_attr_provider::initWithGssContext(const gss_eap_attr_ctx *manager,
                                                const gss_cred_id_t gssCred,
                                                const gss_ctx_id_t gssCtx)
 {
-    if (!gss_eap_attr_provider::initFromGssContext(manager, gssCred, gssCtx))
+    if (!gss_eap_attr_provider::initWithGssContext(manager, gssCred, gssCtx))
         return false;
 
     auto_ptr<ShibbolethResolver> resolver(ShibbolethResolver::create());
@@ -186,6 +186,7 @@ gss_eap_shib_attr_provider::initFromGssContext(const gss_eap_attr_ctx *manager,
         m_attributes = resolver->getResolvedAttributes();
         resolver->getResolvedAttributes().clear();
     } catch (exception &e) {
+        return false;
     }
 
     m_authenticated = true;
@@ -407,13 +408,9 @@ gss_eap_shib_attr_provider::jsonRepresentation(void) const
 
     for (vector<Attribute*>::const_iterator a = m_attributes.begin();
          a != m_attributes.end(); ++a) {
-        try {
-            DDF attr = (*a)->marshall();
-            JSONObject jattr = JSONObject::ddf(attr);
-            jattrs.append(jattr);
-        } catch (AttributeException &e) {
-            /* XXX FIXME ignore attribute exceptions? */
-        }
+        DDF attr = (*a)->marshall();
+        JSONObject jattr = JSONObject::ddf(attr);
+        jattrs.append(jattr);
     }
 
     obj.set("attributes", jattrs);
@@ -439,13 +436,9 @@ gss_eap_shib_attr_provider::initWithJsonObject(const gss_eap_attr_ctx *ctx,
     for (size_t i = 0; i < nelems; i++) {
         JSONObject jattr = jattrs.get(i);
 
-        try {
-            DDF attr = jattr.ddf();
-            Attribute *attribute = Attribute::unmarshall(attr);
-            m_attributes.push_back(attribute);
-        } catch (AttributeException &e) {
-            return false;
-        }
+        DDF attr = jattr.ddf();
+        Attribute *attribute = Attribute::unmarshall(attr);
+        m_attributes.push_back(attribute);
     }
 
     m_authenticated = obj["authenticated"].integer();
@@ -490,6 +483,8 @@ gss_eap_shib_attr_provider::mapException(OM_uint32 *minor,
         *minor = GSSEAP_SHIB_LISTENER_FAILURE;
     else
         return GSS_S_CONTINUE_NEEDED;
+
+    gssEapSaveStatusInfo(*minor, "%s", e.what());
 
     return GSS_S_FAILURE;
 }

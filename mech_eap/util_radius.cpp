@@ -63,12 +63,12 @@ gss_eap_radius_attr_provider::~gss_eap_radius_attr_provider(void)
 }
 
 bool
-gss_eap_radius_attr_provider::initFromExistingContext(const gss_eap_attr_ctx *manager,
+gss_eap_radius_attr_provider::initWithExistingContext(const gss_eap_attr_ctx *manager,
                                                       const gss_eap_attr_provider *ctx)
 {
     const gss_eap_radius_attr_provider *radius;
 
-    if (!gss_eap_attr_provider::initFromExistingContext(manager, ctx))
+    if (!gss_eap_attr_provider::initWithExistingContext(manager, ctx))
         return false;
 
     radius = static_cast<const gss_eap_radius_attr_provider *>(ctx);
@@ -82,11 +82,11 @@ gss_eap_radius_attr_provider::initFromExistingContext(const gss_eap_attr_ctx *ma
 }
 
 bool
-gss_eap_radius_attr_provider::initFromGssContext(const gss_eap_attr_ctx *manager,
+gss_eap_radius_attr_provider::initWithGssContext(const gss_eap_attr_ctx *manager,
                                                  const gss_cred_id_t gssCred,
                                                  const gss_ctx_id_t gssCtx)
 {
-    if (!gss_eap_attr_provider::initFromGssContext(manager, gssCred, gssCtx))
+    if (!gss_eap_attr_provider::initWithGssContext(manager, gssCred, gssCtx))
         return false;
 
     if (gssCtx != GSS_C_NO_CONTEXT) {
@@ -189,7 +189,7 @@ copyAvps(const VALUE_PAIR *src)
         vpcopy = paircopyvp(vp);
         if (vpcopy == NULL) {
             pairfree(&dst);
-            throw new std::bad_alloc;
+            throw std::bad_alloc();
             return NULL;
         }
         *pDst = vpcopy;
@@ -639,7 +639,7 @@ avpToJson(const VALUE_PAIR *vp)
         char *b64;
 
         if (base64Encode(vp->vp_octets, vp->length, &b64) < 0)
-            throw new std::bad_alloc;
+            throw std::bad_alloc();
 
         obj.set("value", b64);
         GSSEAP_FREE(b64);
@@ -674,7 +674,7 @@ jsonToAvp(VALUE_PAIR **pVp, JSONObject &obj)
         vp = paircreate(attrid, PW_TYPE_OCTETS);
     }
     if (vp == NULL) {
-        throw new std::bad_alloc;
+        throw std::bad_alloc();
         goto fail;
     }
 
@@ -708,27 +708,28 @@ jsonToAvp(VALUE_PAIR **pVp, JSONObject &obj)
             goto fail;
 
         const char *str = value.string();
-        size_t len = strlen(str);
+        size_t stringLen = strlen(str);
 
         /* this optimization requires base64Decode only understand packed encoding */
-        if (len >= BASE64_EXPAND(MAX_STRING_LEN))
+        if (stringLen >= BASE64_EXPAND(MAX_STRING_LEN))
             goto fail;
 
         /*
          * If the attribute is unknown, we don't know its syntax; assume
-         * it is an octet string and, if that fails to decode, a string.
+         * it is an octet string and, if that fails to decode and will
+         * fit, a string.
          */
-        len = base64Decode(str, vp->vp_octets);
-        if (len < 0) {
-            if (da == NULL) {
-                assert(len < MAX_STRING_LEN);
-                vp->length = len;
-                memcpy(vp->vp_strvalue, str, len + 1);
+        size_t valueLen = base64Decode(str, vp->vp_octets);
+        if (valueLen < 0) {
+            if (da == NULL && stringLen < MAX_STRING_LEN) {
+                vp->type = PW_TYPE_STRING;
+                vp->length = stringLen;
+                memcpy(vp->vp_strvalue, str, stringLen + 1);
             } else
                 goto fail;
         } else {
-            vp->length = len;
-            vp->vp_octets[len] = '\0';
+            vp->length = valueLen;
+            vp->vp_octets[valueLen] = '\0';
         }
         break;
     }
