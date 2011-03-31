@@ -9,3 +9,4 @@ libradsec/lib
 libeap
 jansson
 mech_eap
+#cyrus-sasl
