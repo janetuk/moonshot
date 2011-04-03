@@ -450,8 +450,7 @@ gss_eap_shib_attr_provider::initWithJsonObject(const gss_eap_attr_ctx *ctx,
 bool
 gss_eap_shib_attr_provider::init(void)
 {
-    if (SPConfig::getConfig().getFeatures() == 0 &&
-        ShibbolethResolver::init() == false)
+    if (!ShibbolethResolver::init())
         return false;
 
     gss_eap_attr_ctx::registerProvider(ATTR_TYPE_LOCAL, createAttrContext);
