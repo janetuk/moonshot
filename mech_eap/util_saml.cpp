@@ -479,12 +479,12 @@ gss_eap_saml_attr_provider::getAttributeTypes(gss_eap_attr_enumeration_cb addAtt
 static BaseRefVectorOf<XMLCh> *
 decomposeAttributeName(const gss_buffer_t attr)
 {
-    XMLCh *qualifiedAttr = new XMLCh[attr->length + 1];
-    XMLString::transcode((const char *)attr->value, qualifiedAttr, attr->length);
+    string inputAttr((const char *) attr->value, attr->length);
+    XMLCh *qualifiedAttr = XMLString::transcode((const char *)inputAttr.c_str());
 
     BaseRefVectorOf<XMLCh> *components = XMLString::tokenizeString(qualifiedAttr);
 
-    delete qualifiedAttr;
+    XMLString::release(&qualifiedAttr);
 
     if (components->size() != 2) {
         delete components;
@@ -523,8 +523,8 @@ gss_eap_saml_attr_provider::setAttribute(int complete GSSEAP_UNUSED,
     attribute->setNameFormat(components->elementAt(0));
     attribute->setName(components->elementAt(1));
 
-    XMLCh *xmlValue = new XMLCh[value->length + 1];
-    XMLString::transcode((const char *)value->value, xmlValue, attr->length);
+    string sValue((const char *) value->value, value->length);
+    XMLCh *xmlValue = XMLString::transcode(sValue.c_str());
 
     attributeValue = saml2::AttributeValueBuilder::buildAttributeValue();
     attributeValue->setTextContent(xmlValue);
@@ -535,7 +535,7 @@ gss_eap_saml_attr_provider::setAttribute(int complete GSSEAP_UNUSED,
     attributeStatement->getAttributes().push_back(attribute);
 
     delete components;
-    delete xmlValue;
+    XMLString::release(&xmlValue);;
 
     return true;
 }
