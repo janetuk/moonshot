@@ -24,6 +24,7 @@ mech_eap_la_SOURCES =    			\
 	acquire_cred_with_password.c		\
 	add_cred.c				\
 	add_cred_with_password.c		\
+	authorize_localname.c			\
 	canonicalize_name.c			\
 	compare_name.c				\
 	context_time.c				\
@@ -68,7 +69,6 @@ mech_eap_la_SOURCES =    			\
 	store_cred.c				\
 	unwrap.c				\
 	unwrap_iov.c				\
-	userok.c				\
 	util_attr.cpp				\
 	util_base64.c				\
 	util_buffer.c				\
