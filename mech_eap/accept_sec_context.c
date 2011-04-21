@@ -1098,7 +1098,7 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
         return major;
 
     major = gssAcceptSecContext(minor,
-                                &ctx->kerberosCtx,
+                                &ctx->reauthCtx,
                                 cred->krbCred,
                                 inputToken,
                                 &wireChanBindings,
@@ -1119,7 +1119,7 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
     } else if (GSS_ERROR(major) &&
         (*smFlags & SM_FLAG_INPUT_TOKEN_CRITICAL) == 0) {
         /* Fall back to EAP */
-        gssDeleteSecContext(&tmpMinor, &ctx->kerberosCtx, GSS_C_NO_BUFFER);
+        gssDeleteSecContext(&tmpMinor, &ctx->reauthCtx, GSS_C_NO_BUFFER);
         ctx->flags &= ~(CTX_FLAG_KRB_REAUTH);
         GSSEAP_SM_TRANSITION(ctx, GSSEAP_STATE_INITIAL);
     } else {
