@@ -485,7 +485,7 @@ eapGssSmInitGssReauth(OM_uint32 *minor,
         goto cleanup;
 
     major = gssInitSecContext(minor,
-                              cred->krbCred,
+                              cred->reauthCred,
                               &ctx->reauthCtx,
                               mechTarget,
                               (gss_OID)gss_mech_krb5,
