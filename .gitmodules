@@ -20,7 +20,7 @@
 	path = shibboleth/resolver
 	url = http://www.project-moonshot.org/git/shibboleth/resolver.git
 [submodule "libeap"]
-	path = libeap
+	path = moonshot/libeap
 	url = http://www.project-moonshot.org/git/libeap.git
 [submodule "openssh"]
 	path = openssh
