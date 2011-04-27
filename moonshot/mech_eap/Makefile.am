@@ -17,12 +17,13 @@ mech_eap_la_CXXFLAGS = -Werror -Wall -Wunused-parameter \
 		        @SHIBRESOLVER_CXXFLAGS@ @SHIBSP_CXXFLAGS@ @TARGET_CFLAGS@ $(EAP_CFLAGS)
 mech_eap_la_LDFLAGS  = -avoid-version -module \
 			-export-symbols mech_eap.exports -no-undefined \
-			@EAP_LDFLAGS@ @RADSEC_LDFLAGS@ @TARGET_LDFLAGS@
+			@RADSEC_LDFLAGS@ @TARGET_LDFLAGS@
 mech_eap_la_LIBADD   = @KRB5_LIBS@ ../libeap/libeap.la @RADSEC_LIBS@ \
 		       @SHIBRESOLVER_LIBS@ @SHIBSP_LIBS@ @JANSSON_LIBS@
 
 mech_eap_la_SOURCES =    			\
 	accept_sec_context.c			\
+	authorize_localname.c			\
 	acquire_cred.c				\
 	acquire_cred_with_password.c		\
 	add_cred.c				\
