@@ -3,19 +3,22 @@ AUTOMAKE_OPTIONS = foreign
 gssincludedir = $(includedir)/gssapi
 gssinclude_HEADERS = gssapi_eap.h
 
+EAP_CFLAGS = -I$(srcdir)/../libeap/src -I$(srcdir)/../libeap/src/common -I$(srcdir)/../libeap/src/eap_common  \
+    -I$(srcdir)/../libeap/src/utils -DIEEE8021X_EAPOL
+
 gssdir = $(libdir)/gss
 gss_LTLIBRARIES = mech_eap.la
 
 mech_eap_la_CPPFLAGS = -DBUILD_GSSEAP_LIB -DSYSCONFDIR=\"${sysconfdir}\" -DDATAROOTDIR=\"${datarootdir}\"
 mech_eap_la_CFLAGS   = -Werror -Wall -Wunused-parameter \
-			@KRB5_CFLAGS@ @EAP_CFLAGS@ @RADSEC_CFLAGS@ @TARGET_CFLAGS@
+			@KRB5_CFLAGS@  @RADSEC_CFLAGS@ @TARGET_CFLAGS@ $(EAP_CFLAGS)
 mech_eap_la_CXXFLAGS = -Werror -Wall -Wunused-parameter \
-			@KRB5_CFLAGS@ @EAP_CFLAGS@ @RADSEC_CFLAGS@ \
-		        @SHIBRESOLVER_CXXFLAGS@ @SHIBSP_CXXFLAGS@ @TARGET_CFLAGS@
+			@KRB5_CFLAGS@  @RADSEC_CFLAGS@ \
+		        @SHIBRESOLVER_CXXFLAGS@ @SHIBSP_CXXFLAGS@ @TARGET_CFLAGS@ $(EAP_CFLAGS)
 mech_eap_la_LDFLAGS  = -avoid-version -module \
 			-export-symbols mech_eap.exports -no-undefined \
 			@EAP_LDFLAGS@ @RADSEC_LDFLAGS@ @TARGET_LDFLAGS@
-mech_eap_la_LIBADD   = @KRB5_LIBS@ @EAP_LIBS@ @RADSEC_LIBS@ \
+mech_eap_la_LIBADD   = @KRB5_LIBS@ ../libeap/libeap.la @RADSEC_LIBS@ \
 		       @SHIBRESOLVER_LIBS@ @SHIBSP_LIBS@ @JANSSON_LIBS@
 
 mech_eap_la_SOURCES =    			\
@@ -124,3 +127,4 @@ radsec_err.c: radsec_err.h
 
 clean-generic:
 	rm -f gsseap_err.[ch] radsec_err.[ch]
+
