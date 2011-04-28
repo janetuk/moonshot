@@ -6,7 +6,6 @@ shibboleth/opensaml2
 shibboleth/sp
 shibboleth/resolver
 libradsec/lib
-libeap
 jansson
-mech_eap
+moonshot
 #cyrus-sasl
