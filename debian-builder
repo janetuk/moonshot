@@ -173,5 +173,5 @@ except CommandError as c:
 finally:
     if tar_file is not None:
         with current_directory(build_place):
-            run_cmd('tar -cf '+tar_file+' *.',
+            run_cmd('tar -cf '+tar_file+' .',
                     shell=True)
