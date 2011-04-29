@@ -145,23 +145,33 @@ opt.add_option('-d', '--distribution',
 opt.add_option('-s', '--sbuild-opt',
                action='append', dest='sbuild_opts',
                help='Specify an option to be sent to sbuild')
+opt.add_option('--tar-file',
+               dest='tar_file',
+               help = 'Tar up resulting packages in given tar file',
+               default = None)
 opt.usage = "%prog [options] [packages]"
 (options, packages) = opt.parse_args()
 build_place = options.build_place
 distribution = options.distribution
 sbuild_opts = options.sbuild_opts
+tar_file = options.tar_file
+
 
 if len(packages) == 0: packages = read_packages()
 try:
     os.makedirs(build_place)
 except OSError: pass
 
+code = 0
 try:
     for p in packages:
         gen_package_files()
         build(p)
 except CommandError as c:
     print "Error:" + str(c.args)
-    exit(1)
-
-    
+    code = 1
+finally:
+    if tar_file is not None:
+        with current_directory(build_place):
+            run_cmd('tar -cf '+tar_file+' *.',
+                    shell=True)
