@@ -7,3 +7,4 @@ shibboleth/sp
 shibboleth/resolver
 libradsec/lib
 moonshot
+openssh
