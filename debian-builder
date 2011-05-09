@@ -59,7 +59,7 @@ def build(package):
     with current_directory(package):
         cl = debian.changelog.Changelog(open('debian/changelog'))
         package_name = cl.package
-        package_version = str(cl.version)
+        package_version = re.sub('^\d+:','',str(cl.version))
         orig_tgz = package_name+'_'+ cl.upstream_version + ".orig.tar.gz"
         dsc_name = package_name+"_"+package_version + ".dsc"
         print "==> Package: ", package_name
