@@ -9,3 +9,5 @@ cd $module_root/shibboleth
 for rep in *.git; do
     (cd $rep&&git svn fetch)
     done
+cd $module_root/radsecproxy.git
+git fetch origin
