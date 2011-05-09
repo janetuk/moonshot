@@ -28,3 +28,6 @@
 [submodule "jansson"]
 	path = jansson
 	url = git://github.com/akheron/jansson.git
+[submodule "firefox"]
+	path = firefox
+	url = http://www.project-moonshot.org/git/moonshot-firefox.git
