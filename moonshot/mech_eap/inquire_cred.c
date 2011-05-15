@@ -45,7 +45,6 @@ gss_inquire_cred(OM_uint32 *minor,
                  gss_OID_set *mechanisms)
 {
     OM_uint32 major;
-    time_t now, lifetime;
 
     if (cred == NULL) {
         *minor = EINVAL;
@@ -54,60 +53,8 @@ gss_inquire_cred(OM_uint32 *minor,
 
     GSSEAP_MUTEX_LOCK(&cred->mutex);
 
-    if (name != NULL) {
-        major = gssEapDuplicateName(minor, cred->name, name);
-        if (GSS_ERROR(major))
-            goto cleanup;
-    }
+    major = gssEapInquireCred(minor, cred, name, pLifetime, cred_usage, mechanisms);
 
-    if (cred_usage != NULL) {
-        OM_uint32 flags = (cred->flags & (CRED_FLAG_INITIATE | CRED_FLAG_ACCEPT));
-
-        switch (flags) {
-        case CRED_FLAG_INITIATE:
-            *cred_usage = GSS_C_INITIATE;
-            break;
-        case CRED_FLAG_ACCEPT:
-            *cred_usage = GSS_C_ACCEPT;
-            break;
-        default:
-            *cred_usage = GSS_C_BOTH;
-            break;
-        }
-    }
-
-    if (mechanisms != NULL) {
-        if (cred->mechanisms != GSS_C_NO_OID_SET)
-            major = duplicateOidSet(minor, cred->mechanisms, mechanisms);
-        else
-            major = gssEapIndicateMechs(minor, mechanisms);
-        if (GSS_ERROR(major))
-            goto cleanup;
-    }
-
-    if (cred->expiryTime == 0) {
-        lifetime = GSS_C_INDEFINITE;
-    } else  {
-        now = time(NULL);
-        lifetime = now - cred->expiryTime;
-        if (lifetime < 0)
-            lifetime = 0;
-    }
-
-    if (pLifetime != NULL) {
-        *pLifetime = lifetime;
-    }
-
-    if (lifetime == 0) {
-        major = GSS_S_CREDENTIALS_EXPIRED;
-        *minor = GSSEAP_CRED_EXPIRED;
-        goto cleanup;
-    }
-
-    major = GSS_S_COMPLETE;
-    *minor = 0;
-
-cleanup:
     GSSEAP_MUTEX_UNLOCK(&cred->mutex);
 
     return major;

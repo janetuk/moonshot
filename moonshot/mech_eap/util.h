@@ -225,13 +225,16 @@ gssEapMakeTokenChannelBindings(OM_uint32 *minor,
                                gss_channel_bindings_t wireBindings);
 
 /* util_cred.c */
+extern const gss_OID_desc gssEapPasswordCredType;
+
 OM_uint32 gssEapAllocCred(OM_uint32 *minor, gss_cred_id_t *pCred);
 OM_uint32 gssEapReleaseCred(OM_uint32 *minor, gss_cred_id_t *pCred);
 
 OM_uint32
 gssEapAcquireCred(OM_uint32 *minor,
                   const gss_name_t desiredName,
-                  const gss_buffer_t password,
+                  gss_const_OID credType,
+                  const void *credData,
                   OM_uint32 timeReq,
                   const gss_OID_set desiredMechs,
                   int cred_usage,
@@ -240,6 +243,14 @@ gssEapAcquireCred(OM_uint32 *minor,
                   OM_uint32 *timeRec);
 
 int gssEapCredAvailable(gss_cred_id_t cred, gss_OID mech);
+
+OM_uint32
+gssEapInquireCred(OM_uint32 *minor,
+                  gss_cred_id_t cred,
+                  gss_name_t *name,
+                  OM_uint32 *pLifetime,
+                  gss_cred_usage_t *cred_usage,
+                  gss_OID_set *mechanisms);
 
 /* util_crypt.c */
 int

@@ -31,51 +31,46 @@
  */
 
 /*
- * Set an extended property on a context handle.
+ * Return credential handle properties.
  */
 
 #include "gssapiP_eap.h"
 
-static struct {
-    gss_OID_desc oid;
-    OM_uint32 (*setOption)(OM_uint32 *, gss_ctx_id_t *pCtx,
-                           const gss_OID, const gss_buffer_t);
-} setCtxOps[] = {
-};
-
 OM_uint32
-gss_set_sec_context_option(OM_uint32 *minor,
-                           gss_ctx_id_t *pCtx,
-                           const gss_OID desired_object,
-                           const gss_buffer_t value)
+gss_inquire_cred_by_mech(OM_uint32 *minor,
+                         gss_cred_id_t cred,
+                         gss_OID mech_type,
+                         gss_name_t *name,
+                         OM_uint32 *pInitiatorLifetime,
+                         OM_uint32 *pAcceptorLifetime,
+                         gss_cred_usage_t *cred_usage)
 {
-    OM_uint32 major;
-    gss_ctx_id_t ctx;
-    int i;
+    OM_uint32 major, lifetime;
 
-    major = GSS_S_UNAVAILABLE;
-    *minor = GSSEAP_BAD_CONTEXT_OPTION;
-
-    if (pCtx == NULL)
-        ctx = GSS_C_NO_CONTEXT;
-    else
-        ctx = *pCtx;
-
-    if (ctx != GSS_C_NO_CONTEXT)
-        GSSEAP_MUTEX_LOCK(&ctx->mutex);
-
-    for (i = 0; i < sizeof(setCtxOps) / sizeof(setCtxOps[0]); i++) {
-        if (oidEqual(&setCtxOps[i].oid, desired_object)) {
-            major = (*setCtxOps[i].setOption)(minor, &ctx,
-                                              desired_object, value);
-            break;
-        }
+    if (cred == NULL) {
+        *minor = EINVAL;
+        return GSS_S_NO_CRED;
     }
 
-    if (pCtx != NULL && *pCtx == NULL)
-        *pCtx = ctx;
-    else if (ctx != GSS_C_NO_CONTEXT)
-        GSSEAP_MUTEX_UNLOCK(&ctx->mutex);
+    GSSEAP_MUTEX_LOCK(&cred->mutex);
+
+    if (!gssEapCredAvailable(cred, mech_type)) {
+        major = GSS_S_BAD_MECH;
+        *minor = GSSEAP_CRED_MECH_MISMATCH;
+        goto cleanup;
+    }
+
+    major = gssEapInquireCred(minor, cred, name, &lifetime, cred_usage, NULL);
+    if (GSS_ERROR(major))
+        goto cleanup;
+
+    if (pInitiatorLifetime != NULL)
+        *pInitiatorLifetime = (cred->flags & CRED_FLAG_INITIATE) ? lifetime : 0;
+    if (pAcceptorLifetime != NULL)
+        *pAcceptorLifetime = (cred->flags & CRED_FLAG_ACCEPT) ? lifetime : 0;
+
+cleanup:
+    GSSEAP_MUTEX_UNLOCK(&cred->mutex);
 
     return major;
 }

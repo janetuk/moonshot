@@ -38,6 +38,9 @@
 
 #include <pwd.h>
 
+const gss_OID_desc gssEapPasswordCredType =
+    { 7, "\x2a\x85\x70\x2b\x0d\x81\x48" };
+
 OM_uint32
 gssEapAllocCred(OM_uint32 *minor, gss_cred_id_t *pCred)
 {
@@ -197,7 +200,8 @@ cleanup:
 OM_uint32
 gssEapAcquireCred(OM_uint32 *minor,
                   const gss_name_t desiredName,
-                  const gss_buffer_t password,
+                  gss_const_OID credType,
+                  const void *credData,
                   OM_uint32 timeReq GSSEAP_UNUSED,
                   const gss_OID_set desiredMechs,
                   int credUsage,
@@ -211,9 +215,20 @@ gssEapAcquireCred(OM_uint32 *minor,
     gss_name_t defaultIdentityName = GSS_C_NO_NAME;
     gss_buffer_desc defaultCreds = GSS_C_EMPTY_BUFFER;
     gss_OID nameMech = GSS_C_NO_OID;
+    gss_buffer_t password = GSS_C_NO_BUFFER;
 
     /* XXX TODO validate with changed set_cred_option API */
     *pCred = GSS_C_NO_CREDENTIAL;
+
+    if (credType != GSS_C_NO_OID) {
+        if (oidEqual(credType, &gssEapPasswordCredType)) {
+            password = (gss_buffer_t)credData;
+        } else {
+            major = GSS_S_CRED_UNAVAIL;
+            *minor = GSSEAP_BAD_CRED_TYPE;
+            goto cleanup;
+        }
+    }
 
     major = gssEapAllocCred(minor, &cred);
     if (GSS_ERROR(major))
@@ -388,4 +403,70 @@ gssEapCredAvailable(gss_cred_id_t cred, gss_OID mech)
     gss_test_oid_set_member(&minor, mech, cred->mechanisms, &present);
 
     return present;
+}
+
+OM_uint32
+gssEapInquireCred(OM_uint32 *minor,
+                  gss_cred_id_t cred,
+                  gss_name_t *name,
+                  OM_uint32 *pLifetime,
+                  gss_cred_usage_t *cred_usage,
+                  gss_OID_set *mechanisms)
+{
+    OM_uint32 major;
+    time_t now, lifetime;
+
+    if (name != NULL) {
+        major = gssEapDuplicateName(minor, cred->name, name);
+        if (GSS_ERROR(major))
+            return major;
+    }
+
+    if (cred_usage != NULL) {
+        OM_uint32 flags = (cred->flags & (CRED_FLAG_INITIATE | CRED_FLAG_ACCEPT));
+
+        switch (flags) {
+        case CRED_FLAG_INITIATE:
+            *cred_usage = GSS_C_INITIATE;
+            break;
+        case CRED_FLAG_ACCEPT:
+            *cred_usage = GSS_C_ACCEPT;
+            break;
+        default:
+            *cred_usage = GSS_C_BOTH;
+            break;
+        }
+    }
+
+    if (mechanisms != NULL) {
+        if (cred->mechanisms != GSS_C_NO_OID_SET)
+            major = duplicateOidSet(minor, cred->mechanisms, mechanisms);
+        else
+            major = gssEapIndicateMechs(minor, mechanisms);
+        if (GSS_ERROR(major))
+            return major;
+    }
+
+    if (cred->expiryTime == 0) {
+        lifetime = GSS_C_INDEFINITE;
+    } else  {
+        now = time(NULL);
+        lifetime = now - cred->expiryTime;
+        if (lifetime < 0)
+            lifetime = 0;
+    }
+
+    if (pLifetime != NULL) {
+        *pLifetime = lifetime;
+    }
+
+    if (lifetime == 0) {
+        *minor = GSSEAP_CRED_EXPIRED;
+        return GSS_S_CREDENTIALS_EXPIRED;
+    }
+
+    major = GSS_S_COMPLETE;
+    *minor = 0;
+
+    return major;
 }

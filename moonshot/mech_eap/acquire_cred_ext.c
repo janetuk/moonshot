@@ -31,51 +31,39 @@
  */
 
 /*
- * Set an extended property on a context handle.
+ * Wrapper for acquiring a credential handle.
  */
 
 #include "gssapiP_eap.h"
 
-static struct {
-    gss_OID_desc oid;
-    OM_uint32 (*setOption)(OM_uint32 *, gss_ctx_id_t *pCtx,
-                           const gss_OID, const gss_buffer_t);
-} setCtxOps[] = {
-};
-
 OM_uint32
-gss_set_sec_context_option(OM_uint32 *minor,
-                           gss_ctx_id_t *pCtx,
-                           const gss_OID desired_object,
-                           const gss_buffer_t value)
+gss_acquire_cred_ext
+           (OM_uint32 *minor,
+            const gss_name_t desired_name,
+            gss_const_OID credential_type,
+            const void *credential_data,
+            OM_uint32 time_req,
+            gss_const_OID desired_mech,
+            gss_cred_usage_t cred_usage,
+            gss_cred_id_t *output_cred_handle
+           )
 {
     OM_uint32 major;
-    gss_ctx_id_t ctx;
-    int i;
+    gss_OID_set_desc mechs;
 
-    major = GSS_S_UNAVAILABLE;
-    *minor = GSSEAP_BAD_CONTEXT_OPTION;
+    mechs.count = 1;
+    mechs.elements = (gss_OID)desired_mech;
 
-    if (pCtx == NULL)
-        ctx = GSS_C_NO_CONTEXT;
-    else
-        ctx = *pCtx;
-
-    if (ctx != GSS_C_NO_CONTEXT)
-        GSSEAP_MUTEX_LOCK(&ctx->mutex);
-
-    for (i = 0; i < sizeof(setCtxOps) / sizeof(setCtxOps[0]); i++) {
-        if (oidEqual(&setCtxOps[i].oid, desired_object)) {
-            major = (*setCtxOps[i].setOption)(minor, &ctx,
-                                              desired_object, value);
-            break;
-        }
-    }
-
-    if (pCtx != NULL && *pCtx == NULL)
-        *pCtx = ctx;
-    else if (ctx != GSS_C_NO_CONTEXT)
-        GSSEAP_MUTEX_UNLOCK(&ctx->mutex);
+    major = gssEapAcquireCred(minor,
+                              desired_name,
+                              credential_type,
+                              credential_data,
+                              time_req,
+                              &mechs,
+                              cred_usage,
+                              output_cred_handle,
+                              NULL,
+                              NULL);
 
     return major;
 }
