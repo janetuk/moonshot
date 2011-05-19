@@ -304,7 +304,24 @@ gss_eap_shib_attr_provider::getAttribute(const gss_buffer_t attr,
     buf.value = (void *)shibAttr->getSerializedValues()[*more].c_str();
     buf.length = strlen((char *)buf.value);
 
-    if (buf.length != 0) {
+    /* XXX hack until we have proper binary attribute support */
+    if (attr->length == sizeof("urn:mspac:") - 1 &&
+        memcmp(attr->value, "urn:mspac:", attr->length) == 0) {
+        ssize_t octetLen;
+
+        value->value = GSSEAP_MALLOC(buf.length);
+        if (value->value == NULL)
+            throw std::bad_alloc();
+
+        octetLen = base64Decode((char *)buf.value, value->value);
+        if (octetLen < 0) {
+            GSSEAP_FREE(value->value);
+            value->value = NULL;
+            return false;
+        }
+
+        value->length = octetLen;
+    } else if (buf.length != 0) {
         if (value != NULL)
             duplicateBuffer(buf, value);
 
@@ -315,7 +332,7 @@ gss_eap_shib_attr_provider::getAttribute(const gss_buffer_t attr,
     if (authenticated != NULL)
         *authenticated = m_authenticated;
     if (complete != NULL)
-        *complete = false;
+        *complete = true;
 
     if (nvalues > ++i)
         *more = i;
@@ -417,13 +434,18 @@ gss_eap_shib_attr_provider::initWithJsonObject(const gss_eap_attr_ctx *ctx,
 bool
 gss_eap_shib_attr_provider::init(void)
 {
-    if (SPConfig::getConfig().getFeatures() == 0 &&
-        ShibbolethResolver::init() == false)
-        return false;
+    bool ret = false;
 
-    gss_eap_attr_ctx::registerProvider(ATTR_TYPE_LOCAL, createAttrContext);
+    try {
+        if (SPConfig::getConfig().getFeatures() == 0)
+            ret = ShibbolethResolver::init();
+    } catch (exception &e) {
+    }
 
-    return true;
+    if (ret)
+        gss_eap_attr_ctx::registerProvider(ATTR_TYPE_LOCAL, createAttrContext);
+
+    return ret;
 }
 
 void

@@ -95,6 +95,10 @@ public:
                                 int *authenticated,
                                 int *complete,
                                 gss_buffer_t value) const;
+    bool getFragmentedAttribute(uint32_t attrid,
+                                int *authenticated,
+                                int *complete,
+                                gss_buffer_t value) const;
 
     bool authenticated(void) const { return m_authenticated; }
 
@@ -164,6 +168,7 @@ gssEapRadiusMapError(OM_uint32 *minor,
 #define PW_GSS_ACCEPTOR_SERVICE_SPECIFIC    130
 #define PW_GSS_ACCEPTOR_REALM_NAME          131
 #define PW_SAML_AAA_ASSERTION               132
+#define PW_MS_WINDOWS_AUTH_DATA             133
 
 #define IS_RADIUS_ERROR(code)               ((code) >= ERROR_TABLE_BASE_rse && \
                                              (code) <= ERROR_TABLE_BASE_rse + RSE_TIMEOUT_IO)
