@@ -669,6 +669,11 @@ eapGssSmInitAuthenticate(OM_uint32 *minor,
     major = GSS_S_CONTINUE_NEEDED;
 
     code = eap_peer_sm_step(ctx->initiatorCtx.eap);
+    if (code != 0) {
+      major = GSS_S_FAILURE;
+      *minor = GSSEAP_PEER_SM_STEP_FAILURE;
+      goto cleanup;
+    }
     if (ctx->flags & CTX_FLAG_EAP_RESP) {
         ctx->flags &= ~(CTX_FLAG_EAP_RESP);
 

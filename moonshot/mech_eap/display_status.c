@@ -133,6 +133,8 @@ gssEapSaveStatusInfo(OM_uint32 minor, const char *format, ...)
         va_start(ap, format);
         n = vasprintf(&s, format, ap);
         va_end(ap);
+	if (n == -1)
+	  s = NULL;
     }
 
     saveStatusInfoNoCopy(minor, s);
