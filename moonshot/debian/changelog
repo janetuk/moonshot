@@ -1,3 +1,9 @@
+moonshot-gss-eap (0.1+20110809-1) unstable; urgency=low
+
+  * New upstream version
+
+ -- Sam Hartman <hartmans@project-moonshot.org>  Tue, 09 Aug 2011 13:20:50 -0400
+
 moonshot-gss-eap (0.1+20110427-7) unstable; urgency=low
 
   * Add build-conflicts on libgss-dev
