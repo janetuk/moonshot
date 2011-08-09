@@ -175,3 +175,5 @@ finally:
         with current_directory(build_place):
             run_cmd('tar -cf '+tar_file+' .',
                     shell=True)
+
+sys.exit(code)
