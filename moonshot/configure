@@ -15135,13 +15135,13 @@ else
 
 
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GSS_C_NT_COMPOSITE_EXPORT in -lgssapi_krb5" >&5
-$as_echo_n "checking for GSS_C_NT_COMPOSITE_EXPORT in -lgssapi_krb5... " >&6; }
-if test "${ac_cv_lib_gssapi_krb5_GSS_C_NT_COMPOSITE_EXPORT+set}" = set; then :
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GSS_C_NT_COMPOSITE_EXPORT in -lkrb5" >&5
+$as_echo_n "checking for GSS_C_NT_COMPOSITE_EXPORT in -lkrb5... " >&6; }
+if test "${ac_cv_lib_krb5_GSS_C_NT_COMPOSITE_EXPORT+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgssapi_krb5 "$KRB5_LIBS" $LIBS"
+LIBS="-lkrb5 "$KRB5_LIBS" $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -15161,17 +15161,17 @@ return GSS_C_NT_COMPOSITE_EXPORT ();
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_gssapi_krb5_GSS_C_NT_COMPOSITE_EXPORT=yes
+  ac_cv_lib_krb5_GSS_C_NT_COMPOSITE_EXPORT=yes
 else
-  ac_cv_lib_gssapi_krb5_GSS_C_NT_COMPOSITE_EXPORT=no
+  ac_cv_lib_krb5_GSS_C_NT_COMPOSITE_EXPORT=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gssapi_krb5_GSS_C_NT_COMPOSITE_EXPORT" >&5
-$as_echo "$ac_cv_lib_gssapi_krb5_GSS_C_NT_COMPOSITE_EXPORT" >&6; }
-if test "x$ac_cv_lib_gssapi_krb5_GSS_C_NT_COMPOSITE_EXPORT" = x""yes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_krb5_GSS_C_NT_COMPOSITE_EXPORT" >&5
+$as_echo "$ac_cv_lib_krb5_GSS_C_NT_COMPOSITE_EXPORT" >&6; }
+if test "x$ac_cv_lib_krb5_GSS_C_NT_COMPOSITE_EXPORT" = x""yes; then :
 
 cat >>confdefs.h <<_ACEOF
 #define HAVE_GSS_C_NT_COMPOSITE_EXPORT 1
@@ -15179,13 +15179,13 @@ _ACEOF
 
 fi
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gss_inquire_attrs_for_mech in -lgssapi_krb5" >&5
-$as_echo_n "checking for gss_inquire_attrs_for_mech in -lgssapi_krb5... " >&6; }
-if test "${ac_cv_lib_gssapi_krb5_gss_inquire_attrs_for_mech+set}" = set; then :
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gss_inquire_attrs_for_mech in -lkrb5" >&5
+$as_echo_n "checking for gss_inquire_attrs_for_mech in -lkrb5... " >&6; }
+if test "${ac_cv_lib_krb5_gss_inquire_attrs_for_mech+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgssapi_krb5 "$KRB5_LIBS" $LIBS"
+LIBS="-lkrb5 "$KRB5_LIBS" $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -15205,17 +15205,17 @@ return gss_inquire_attrs_for_mech ();
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_gssapi_krb5_gss_inquire_attrs_for_mech=yes
+  ac_cv_lib_krb5_gss_inquire_attrs_for_mech=yes
 else
-  ac_cv_lib_gssapi_krb5_gss_inquire_attrs_for_mech=no
+  ac_cv_lib_krb5_gss_inquire_attrs_for_mech=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gssapi_krb5_gss_inquire_attrs_for_mech" >&5
-$as_echo "$ac_cv_lib_gssapi_krb5_gss_inquire_attrs_for_mech" >&6; }
-if test "x$ac_cv_lib_gssapi_krb5_gss_inquire_attrs_for_mech" = x""yes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_krb5_gss_inquire_attrs_for_mech" >&5
+$as_echo "$ac_cv_lib_krb5_gss_inquire_attrs_for_mech" >&6; }
+if test "x$ac_cv_lib_krb5_gss_inquire_attrs_for_mech" = x""yes; then :
 
 cat >>confdefs.h <<_ACEOF
 #define HAVE_GSS_INQUIRE_ATTRS_FOR_MECH 1
@@ -15223,13 +15223,13 @@ _ACEOF
 
 fi
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gss_krb5_import_cred in -lgssapi_krb5" >&5
-$as_echo_n "checking for gss_krb5_import_cred in -lgssapi_krb5... " >&6; }
-if test "${ac_cv_lib_gssapi_krb5_gss_krb5_import_cred+set}" = set; then :
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gss_krb5_import_cred in -lkrb5" >&5
+$as_echo_n "checking for gss_krb5_import_cred in -lkrb5... " >&6; }
+if test "${ac_cv_lib_krb5_gss_krb5_import_cred+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgssapi_krb5 "$KRB5_LIBS" $LIBS"
+LIBS="-lkrb5 "$KRB5_LIBS" $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -15249,17 +15249,17 @@ return gss_krb5_import_cred ();
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_gssapi_krb5_gss_krb5_import_cred=yes
+  ac_cv_lib_krb5_gss_krb5_import_cred=yes
 else
-  ac_cv_lib_gssapi_krb5_gss_krb5_import_cred=no
+  ac_cv_lib_krb5_gss_krb5_import_cred=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gssapi_krb5_gss_krb5_import_cred" >&5
-$as_echo "$ac_cv_lib_gssapi_krb5_gss_krb5_import_cred" >&6; }
-if test "x$ac_cv_lib_gssapi_krb5_gss_krb5_import_cred" = x""yes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_krb5_gss_krb5_import_cred" >&5
+$as_echo "$ac_cv_lib_krb5_gss_krb5_import_cred" >&6; }
+if test "x$ac_cv_lib_krb5_gss_krb5_import_cred" = x""yes; then :
 
 cat >>confdefs.h <<_ACEOF
 #define HAVE_GSS_KRB5_IMPORT_CRED 1
