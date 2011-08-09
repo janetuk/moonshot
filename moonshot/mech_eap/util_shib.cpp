@@ -55,6 +55,8 @@
 
 #include <shibsp/exceptions.h>
 #include <shibsp/attribute/SimpleAttribute.h>
+#include <shibsp/attribute/BinaryAttribute.h>
+#include <shibsp/attribute/ScopedAttribute.h>
 #include <shibresolver/resolver.h>
 
 #include <sstream>
@@ -193,7 +195,7 @@ gss_eap_shib_attr_provider::setAttribute(int complete GSSEAP_UNUSED,
 {
     string attrStr((char *)attr->value, attr->length);
     vector <string> ids(1, attrStr);
-    SimpleAttribute *a = new SimpleAttribute(ids);
+    BinaryAttribute *a = new BinaryAttribute(ids);
 
     assert(m_initialized);
 
@@ -283,7 +285,9 @@ gss_eap_shib_attr_provider::getAttribute(const gss_buffer_t attr,
                                          int *more) const
 {
     const Attribute *shibAttr = NULL;
-    gss_buffer_desc buf;
+    const BinaryAttribute *binaryAttr;
+    gss_buffer_desc valueBuf = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc displayValueBuf = GSS_C_EMPTY_BUFFER;
     int nvalues, i = *more;
 
     assert(m_initialized);
@@ -301,22 +305,34 @@ gss_eap_shib_attr_provider::getAttribute(const gss_buffer_t attr,
     if (i >= nvalues)
         return false;
 
-    buf.value = (void *)shibAttr->getSerializedValues()[*more].c_str();
-    buf.length = strlen((char *)buf.value);
+    binaryAttr = dynamic_cast<const BinaryAttribute *>(shibAttr);
+    if (binaryAttr != NULL) {
+        std::string str = binaryAttr->getValues()[*more];
 
-    if (buf.length != 0) {
-        if (value != NULL)
-            duplicateBuffer(buf, value);
+        valueBuf.value = (void *)str.data();
+        valueBuf.length = str.size();
+    } else {
+        std::string str = shibAttr->getSerializedValues()[*more];
 
-        if (display_value != NULL)
-            duplicateBuffer(buf, display_value);
+        valueBuf.value = (void *)str.c_str();
+        valueBuf.length = str.length();
+
+        const SimpleAttribute *simpleAttr =
+            dynamic_cast<const SimpleAttribute *>(shibAttr);
+        const ScopedAttribute *scopedAttr =
+            dynamic_cast<const ScopedAttribute *>(shibAttr);
+        if (simpleAttr != NULL || scopedAttr != NULL)
+            displayValueBuf = valueBuf;
     }
 
     if (authenticated != NULL)
         *authenticated = m_authenticated;
     if (complete != NULL)
         *complete = true;
-
+    if (value != NULL)
+        duplicateBuffer(valueBuf, value);
+    if (display_value != NULL)
+        duplicateBuffer(displayValueBuf, display_value);
     if (nvalues > ++i)
         *more = i;
 
@@ -417,13 +433,17 @@ gss_eap_shib_attr_provider::initWithJsonObject(const gss_eap_attr_ctx *ctx,
 bool
 gss_eap_shib_attr_provider::init(void)
 {
-    if (SPConfig::getConfig().getFeatures() == 0 &&
-        ShibbolethResolver::init() == false)
-        return false;
+    bool ret = false;
 
-    gss_eap_attr_ctx::registerProvider(ATTR_TYPE_LOCAL, createAttrContext);
+    try {
+        ret = ShibbolethResolver::init();
+    } catch (exception &e) {
+    }
 
-    return true;
+    if (ret)
+        gss_eap_attr_ctx::registerProvider(ATTR_TYPE_LOCAL, createAttrContext);
+
+    return ret;
 }
 
 void
