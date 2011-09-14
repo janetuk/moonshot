@@ -2,7 +2,7 @@ Source: moonshot-gss-eap
 Section: net
 Priority: optional
 Maintainer: Sam Hartman <hartmans@debian.org>
-Build-Depends: debhelper (>= 7.0.50~), autotools-dev, libshibsp-dev (>= 1.5+dfsg~moonshot1), 
+Build-Depends: debhelper (>= 7.0.50~), autotools-dev, libshibsp-dev (>= 2.5+dfsg~moonshot2), 
     libradsec-dev, libkrb5-dev (>= 1.9), 
     libshib-resolver-dev, libjansson-dev, libfreeradius-dev
 Build-Conflicts: libgss-dev
