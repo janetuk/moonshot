@@ -3,7 +3,7 @@
 	url = http://www.project-moonshot.org/git/mod_auth_kerb.git
 [submodule "radsecproxy"]
 	path = libradsec
-	url = git://git.nordu.net/radsecproxy.git
+	url = http://www.project-moonshot.org/git/radsecproxy.git/
 [submodule "shibboleth/opensaml2"]
 	path = shibboleth/opensaml2
 	url = http://www.project-moonshot.org/git/shibboleth/opensaml2.git
@@ -27,7 +27,7 @@
 	url = http://www.project-moonshot.org/git/openssh.git
 [submodule "jansson"]
 	path = jansson
-	url = git://github.com/akheron/jansson.git
+	url = http://www.project-moonshot.org/git/jansson.git/
 [submodule "firefox"]
 	path = firefox
 	url = http://www.project-moonshot.org/git/moonshot-firefox.git
