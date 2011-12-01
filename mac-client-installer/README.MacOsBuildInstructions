@@ -33,7 +33,7 @@ You will see the following message
     If this token and others are legitimate, please use m4_pattern_allow.
     See the Autoconf documentation
 
-    $ ./configure
+    $ ./configure --with-gss_impl=mit
     $ make
 
 To install to /usr/local in your build machine
