@@ -46,30 +46,37 @@
 static GSSEAP_THREAD_ONCE gssEapAttrProvidersInitOnce = GSSEAP_ONCE_INITIALIZER;
 static OM_uint32 gssEapAttrProvidersInitStatus = GSS_S_UNAVAILABLE;
 
-static void
-gssEapAttrProvidersInitInternal(void)
+GSSEAP_ONCE_CALLBACK(gssEapAttrProvidersInitInternal)
 {
     OM_uint32 major, minor;
 
-    assert(gssEapAttrProvidersInitStatus == GSS_S_UNAVAILABLE);
+    GSSEAP_ASSERT(gssEapAttrProvidersInitStatus == GSS_S_UNAVAILABLE);
+
+    json_set_alloc_funcs(GSSEAP_MALLOC, GSSEAP_FREE);
 
     major = gssEapRadiusAttrProviderInit(&minor);
     if (GSS_ERROR(major))
         goto cleanup;
 
+#ifdef HAVE_OPENSAML
     major = gssEapSamlAttrProvidersInit(&minor);
     if (GSS_ERROR(major))
         goto cleanup;
+#endif
 
+#ifdef HAVE_SHIBRESOLVER
     /* Allow Shibboleth initialization failure to be non-fatal */
     gssEapLocalAttrProviderInit(&minor);
+#endif
 
 cleanup:
 #ifdef GSSEAP_DEBUG
-    assert(major == GSS_S_COMPLETE);
+    GSSEAP_ASSERT(major == GSS_S_COMPLETE);
 #endif
 
     gssEapAttrProvidersInitStatus = major;
+
+    GSSEAP_ONCE_LEAVE;
 }
 
 static OM_uint32
@@ -86,19 +93,19 @@ gssEapAttrProvidersInit(OM_uint32 *minor)
 OM_uint32
 gssEapAttrProvidersFinalize(OM_uint32 *minor)
 {
-    OM_uint32 major = GSS_S_COMPLETE;
-
     if (gssEapAttrProvidersInitStatus == GSS_S_COMPLETE) {
-        major = gssEapLocalAttrProviderFinalize(minor);
-        if (major == GSS_S_COMPLETE)
-            major = gssEapSamlAttrProvidersFinalize(minor);
-        if (major == GSS_S_COMPLETE)
-            major = gssEapRadiusAttrProviderFinalize(minor);
+#ifdef HAVE_SHIBRESOLVER
+        gssEapLocalAttrProviderFinalize(minor);
+#endif
+#ifdef HAVE_OPENSAML
+        gssEapSamlAttrProvidersFinalize(minor);
+#endif
+        gssEapRadiusAttrProviderFinalize(minor);
 
         gssEapAttrProvidersInitStatus = GSS_S_UNAVAILABLE;
     }
 
-    return major;
+    return GSS_S_COMPLETE;
 }
 
 static gss_eap_attr_create_provider gssEapAttrFactories[ATTR_TYPE_MAX + 1];
@@ -110,9 +117,9 @@ void
 gss_eap_attr_ctx::registerProvider(unsigned int type,
                                    gss_eap_attr_create_provider factory)
 {
-    assert(type <= ATTR_TYPE_MAX);
+    GSSEAP_ASSERT(type <= ATTR_TYPE_MAX);
 
-    assert(gssEapAttrFactories[type] == NULL);
+    GSSEAP_ASSERT(gssEapAttrFactories[type] == NULL);
 
     gssEapAttrFactories[type] = factory;
 }
@@ -123,7 +130,7 @@ gss_eap_attr_ctx::registerProvider(unsigned int type,
 void
 gss_eap_attr_ctx::unregisterProvider(unsigned int type)
 {
-    assert(type <= ATTR_TYPE_MAX);
+    GSSEAP_ASSERT(type <= ATTR_TYPE_MAX);
 
     gssEapAttrFactories[type] = NULL;
 }
@@ -411,7 +418,7 @@ gss_eap_attr_ctx::~gss_eap_attr_ctx(void)
 gss_eap_attr_provider *
 gss_eap_attr_ctx::getProvider(unsigned int type) const
 {
-    assert(type >= ATTR_TYPE_MIN && type <= ATTR_TYPE_MAX);
+    GSSEAP_ASSERT(type >= ATTR_TYPE_MIN && type <= ATTR_TYPE_MAX);
     return m_providers[type];
 }
 
@@ -709,7 +716,7 @@ gss_eap_attr_ctx::mapException(OM_uint32 *minor, std::exception &e) const
     }
 
 cleanup:
-    assert(GSS_ERROR(major));
+    GSSEAP_ASSERT(GSS_ERROR(major));
 
     return major;
 }
@@ -1003,7 +1010,7 @@ gssEapImportAttrContext(OM_uint32 *minor,
     gss_eap_attr_ctx *ctx = NULL;
     OM_uint32 major = GSS_S_FAILURE;
 
-    assert(name->attrCtx == NULL);
+    GSSEAP_ASSERT(name->attrCtx == NULL);
 
     if (GSS_ERROR(gssEapAttrProvidersInit(minor)))
         return GSS_S_UNAVAILABLE;
@@ -1027,7 +1034,7 @@ gssEapImportAttrContext(OM_uint32 *minor,
             major = ctx->mapException(minor, e);
     }
 
-    assert(major == GSS_S_COMPLETE || name->attrCtx == NULL);
+    GSSEAP_ASSERT(major == GSS_S_COMPLETE || name->attrCtx == NULL);
 
     if (GSS_ERROR(major))
         delete ctx;
@@ -1043,7 +1050,7 @@ gssEapDuplicateAttrContext(OM_uint32 *minor,
     gss_eap_attr_ctx *ctx = NULL;
     OM_uint32 major = GSS_S_FAILURE;
 
-    assert(out->attrCtx == NULL);
+    GSSEAP_ASSERT(out->attrCtx == NULL);
 
     if (in->attrCtx == NULL) {
         *minor = 0;
@@ -1068,7 +1075,7 @@ gssEapDuplicateAttrContext(OM_uint32 *minor,
         major = in->attrCtx->mapException(minor, e);
     }
 
-    assert(major == GSS_S_COMPLETE || out->attrCtx == NULL);
+    GSSEAP_ASSERT(major == GSS_S_COMPLETE || out->attrCtx == NULL);
 
     if (GSS_ERROR(major))
         delete ctx;
@@ -1150,7 +1157,7 @@ gssEapCreateAttrContext(OM_uint32 *minor,
     gss_eap_attr_ctx *ctx = NULL;
     OM_uint32 major;
 
-    assert(gssCtx != GSS_C_NO_CONTEXT);
+    GSSEAP_ASSERT(gssCtx != GSS_C_NO_CONTEXT);
 
     *pAttrContext = NULL;
 

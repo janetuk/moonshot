@@ -46,6 +46,7 @@
 #include <xmltooling/util/DateTime.h>
 
 #include <saml/exceptions.h>
+#include <saml/SAMLConfig.h>
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml2/core/Assertions.h>
 #include <saml/saml2/metadata/Metadata.h>
@@ -82,7 +83,7 @@ gss_eap_saml_assertion_provider::initWithExistingContext(const gss_eap_attr_ctx 
     /* Then we may be creating from an existing attribute context */
     const gss_eap_saml_assertion_provider *saml;
 
-    assert(m_assertion == NULL);
+    GSSEAP_ASSERT(m_assertion == NULL);
 
     if (!gss_eap_attr_provider::initWithExistingContext(manager, ctx))
         return false;
@@ -103,7 +104,7 @@ gss_eap_saml_assertion_provider::initWithGssContext(const gss_eap_attr_ctx *mana
     int authenticated, complete;
     OM_uint32 minor;
 
-    assert(m_assertion == NULL);
+    GSSEAP_ASSERT(m_assertion == NULL);
 
     if (!gss_eap_attr_provider::initWithGssContext(manager, gssCred, gssCtx))
         return false;
@@ -322,8 +323,17 @@ gss_eap_saml_assertion_provider::prefix(void) const
 bool
 gss_eap_saml_assertion_provider::init(void)
 {
-    gss_eap_attr_ctx::registerProvider(ATTR_TYPE_SAML_ASSERTION, createAttrContext);
-    return true;
+    bool ret = false;
+
+    try {
+        ret = SAMLConfig::getConfig().init();
+    } catch (exception &e) {
+    }
+
+    if (ret)
+        gss_eap_attr_ctx::registerProvider(ATTR_TYPE_SAML_ASSERTION, createAttrContext);
+
+    return ret;
 }
 
 void
@@ -499,7 +509,7 @@ gss_eap_saml_attr_provider::setAttribute(int complete GSSEAP_UNUSED,
 
     attribute->getAttributeValues().push_back(attributeValue);
 
-    assert(attributeStatement != NULL);
+    GSSEAP_ASSERT(attributeStatement != NULL);
     attributeStatement->getAttributes().push_back(attribute);
 
     delete components;

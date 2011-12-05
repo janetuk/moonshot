@@ -49,7 +49,13 @@
  * Local attribute provider implementation.
  */
 
+#include "gssapiP_eap.h"
+
 #include <xmltooling/XMLObject.h>
+#ifndef HAVE_OPENSAML
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/ParserPool.h>
+#endif
 
 #include <saml/saml2/core/Assertions.h>
 
@@ -61,14 +67,16 @@
 
 #include <sstream>
 
-#include "gssapiP_eap.h"
-
 using namespace shibsp;
 using namespace shibresolver;
-using namespace opensaml::saml2md;
-using namespace opensaml;
 using namespace xmltooling;
 using namespace std;
+#ifdef HAVE_OPENSAML
+using namespace opensaml::saml2md;
+using namespace opensaml;
+#else
+using namespace xercesc;
+#endif
 
 gss_eap_shib_attr_provider::gss_eap_shib_attr_provider(void)
 {
@@ -143,12 +151,33 @@ gss_eap_shib_attr_provider::initWithGssContext(const gss_eap_attr_ctx *manager,
         gss_release_buffer(&minor, &mechName);
     }
 
+#ifdef HAVE_OPENSAML
     const gss_eap_saml_assertion_provider *saml;
     saml = static_cast<const gss_eap_saml_assertion_provider *>
         (m_manager->getProvider(ATTR_TYPE_SAML_ASSERTION));
     if (saml != NULL && saml->getAssertion() != NULL) {
         resolver->addToken(saml->getAssertion());
     }
+#else
+    /* If no OpenSAML, parse the XML assertion explicitly */
+    const gss_eap_radius_attr_provider *radius;
+    int authenticated, complete;
+    gss_buffer_desc value = GSS_C_EMPTY_BUFFER;
+
+    radius = static_cast<const gss_eap_radius_attr_provider *>
+        (m_manager->getProvider(ATTR_TYPE_RADIUS));
+    if (radius != NULL &&
+        radius->getFragmentedAttribute(PW_SAML_AAA_ASSERTION,
+                                       VENDORPEC_UKERNA,
+                                       &authenticated, &complete, &value)) {
+        string str((char *)value.value, value.length);
+        istringstream istream(str);
+        DOMDocument *doc = XMLToolingConfig::getConfig().getParser().parse(istream);
+        const XMLObjectBuilder *b = XMLObjectBuilder::getBuilder(doc->getDocumentElement());
+        resolver->addToken(b->buildFromDocument(doc));
+        gss_release_buffer(&minor, &value);
+    }
+#endif /* HAVE_OPENSAML */
 
     try {
         resolver->resolve();
@@ -169,7 +198,7 @@ gss_eap_shib_attr_provider::getAttributeIndex(const gss_buffer_t attr) const
 {
     int i = 0;
 
-    assert(m_initialized);
+    GSSEAP_ASSERT(m_initialized);
 
     for (vector<Attribute *>::const_iterator a = m_attributes.begin();
          a != m_attributes.end();
@@ -197,7 +226,7 @@ gss_eap_shib_attr_provider::setAttribute(int complete GSSEAP_UNUSED,
     vector <string> ids(1, attrStr);
     BinaryAttribute *a = new BinaryAttribute(ids);
 
-    assert(m_initialized);
+    GSSEAP_ASSERT(m_initialized);
 
     if (value->length != 0) {
         string valueStr((char *)value->value, value->length);
@@ -216,7 +245,7 @@ gss_eap_shib_attr_provider::deleteAttribute(const gss_buffer_t attr)
 {
     int i;
 
-    assert(m_initialized);
+    GSSEAP_ASSERT(m_initialized);
 
     i = getAttributeIndex(attr);
     if (i >= 0)
@@ -231,7 +260,7 @@ bool
 gss_eap_shib_attr_provider::getAttributeTypes(gss_eap_attr_enumeration_cb addAttribute,
                                               void *data) const
 {
-    assert(m_initialized);
+    GSSEAP_ASSERT(m_initialized);
 
     for (vector<Attribute*>::const_iterator a = m_attributes.begin();
         a != m_attributes.end();
@@ -254,7 +283,7 @@ gss_eap_shib_attr_provider::getAttribute(const gss_buffer_t attr) const
 {
     const Attribute *ret = NULL;
 
-    assert(m_initialized);
+    GSSEAP_ASSERT(m_initialized);
 
     for (vector<Attribute *>::const_iterator a = m_attributes.begin();
          a != m_attributes.end();
@@ -290,7 +319,7 @@ gss_eap_shib_attr_provider::getAttribute(const gss_buffer_t attr,
     gss_buffer_desc displayValueBuf = GSS_C_EMPTY_BUFFER;
     int nvalues, i = *more;
 
-    assert(m_initialized);
+    GSSEAP_ASSERT(m_initialized);
 
     *more = 0;
 
@@ -345,7 +374,7 @@ gss_eap_shib_attr_provider::mapToAny(int authenticated,
 {
     gss_any_t output;
 
-    assert(m_initialized);
+    GSSEAP_ASSERT(m_initialized);
 
     if (authenticated && !m_authenticated)
         return (gss_any_t)NULL;
@@ -361,7 +390,7 @@ void
 gss_eap_shib_attr_provider::releaseAnyNameMapping(gss_buffer_t type_id GSSEAP_UNUSED,
                                                   gss_any_t input) const
 {
-    assert(m_initialized);
+    GSSEAP_ASSERT(m_initialized);
 
     vector <Attribute *> *v = ((vector <Attribute *> *)input);
     delete v;
@@ -410,8 +439,8 @@ gss_eap_shib_attr_provider::initWithJsonObject(const gss_eap_attr_ctx *ctx,
     if (!gss_eap_attr_provider::initWithJsonObject(ctx, obj))
         return false;
 
-    assert(m_authenticated == false);
-    assert(m_attributes.size() == 0);
+    GSSEAP_ASSERT(m_authenticated == false);
+    GSSEAP_ASSERT(m_attributes.size() == 0);
 
     JSONObject jattrs = obj["attributes"];
     size_t nelems = jattrs.size();

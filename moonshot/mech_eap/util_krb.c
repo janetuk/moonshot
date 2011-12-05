@@ -36,22 +36,11 @@
 
 #include "gssapiP_eap.h"
 
-static GSSEAP_THREAD_ONCE krbContextKeyOnce = GSSEAP_ONCE_INITIALIZER;
-static GSSEAP_THREAD_KEY krbContextKey;
-
-static void
-destroyKrbContext(void *arg)
+void
+gssEapDestroyKrbContext(krb5_context context)
 {
-    krb5_context context = (krb5_context)arg;
-
     if (context != NULL)
         krb5_free_context(context);
-}
-
-static void
-createKrbContextKey(void)
-{
-    GSSEAP_KEY_CREATE(&krbContextKey, destroyKrbContext);
 }
 
 static krb5_error_code
@@ -79,11 +68,10 @@ initKrbContext(krb5_context *pKrbContext)
     *pKrbContext = krbContext;
 
 cleanup:
+    krb5_free_default_realm(krbContext, defaultRealm);
+
     if (code != 0 && krbContext != NULL)
         krb5_free_context(krbContext);
-
-    if (defaultRealm != NULL)
-        GSSEAP_FREE(defaultRealm);
 
     return code;
 }
@@ -91,23 +79,26 @@ cleanup:
 OM_uint32
 gssEapKerberosInit(OM_uint32 *minor, krb5_context *context)
 {
+    struct gss_eap_thread_local_data *tld;
+
     *minor = 0;
+    *context = NULL;
 
-    GSSEAP_ONCE(&krbContextKeyOnce, createKrbContextKey);
-
-    *context = GSSEAP_GETSPECIFIC(krbContextKey);
-    if (*context == NULL) {
-        *minor = initKrbContext(context);
-        if (*minor == 0) {
-            if (GSSEAP_SETSPECIFIC(krbContextKey, *context) != 0) {
-                *minor = errno;
-                krb5_free_context(*context);
-                *context = NULL;
-            }
+    tld = gssEapGetThreadLocalData();
+    if (tld != NULL) {
+        if (tld->krbContext == NULL) {
+            *minor = initKrbContext(&tld->krbContext);
+            if (*minor != 0)
+                tld->krbContext = NULL;
         }
+        *context = tld->krbContext;
+    } else {
+        *minor = GSSEAP_GET_LAST_ERROR();
     }
 
-    return *minor == 0 ? GSS_S_COMPLETE : GSS_S_FAILURE;
+    GSSEAP_ASSERT(*context != NULL || *minor != 0);
+
+    return (*minor == 0) ? GSS_S_COMPLETE : GSS_S_FAILURE;
 }
 
 /*
@@ -118,6 +109,9 @@ gssEapKerberosInit(OM_uint32 *minor, krb5_context *context)
  * Tn = pseudo-random(KMSK, n || "rfc4121-gss-eap")
  * L = output key size
  * K = truncate(L, T1 || T2 || .. || Tn)
+ *
+ * The output must be freed by krb5_free_keyblock_contents(),
+ * not GSSEAP_FREE().
  */
 OM_uint32
 gssEapDeriveRfc3961Key(OM_uint32 *minor,
@@ -130,41 +124,31 @@ gssEapDeriveRfc3961Key(OM_uint32 *minor,
 #ifndef HAVE_HEIMDAL_VERSION
     krb5_data data;
 #endif
-    krb5_data ns, t, prfOut;
+    krb5_data ns, t, derivedKeyData;
     krb5_keyblock kd;
     krb5_error_code code;
     size_t randomLength, keyLength, prfLength;
     unsigned char constant[4 + sizeof("rfc4121-gss-eap") - 1], *p;
     ssize_t i, remain;
 
-    assert(encryptionType != ENCTYPE_NULL);
-
-    memset(pKey, 0, sizeof(*pKey));
-
     GSSEAP_KRB_INIT(&krbContext);
+    GSSEAP_ASSERT(encryptionType != ENCTYPE_NULL);
 
+    KRB_KEY_INIT(pKey);
     KRB_KEY_INIT(&kd);
     KRB_KEY_TYPE(&kd) = encryptionType;
 
-    t.data = NULL;
-    t.length = 0;
-
-    prfOut.data = NULL;
-    prfOut.length = 0;
+    KRB_DATA_INIT(&ns);
+    KRB_DATA_INIT(&t);
+    KRB_DATA_INIT(&derivedKeyData);
 
     code = krb5_c_keylengths(krbContext, encryptionType,
                              &randomLength, &keyLength);
     if (code != 0)
         goto cleanup;
 
-    KRB_KEY_DATA(&kd) = GSSEAP_MALLOC(keyLength);
-    if (KRB_KEY_DATA(&kd) == NULL) {
-        code = ENOMEM;
-        goto cleanup;
-    }
-    KRB_KEY_LENGTH(&kd) = keyLength;
+    /* Convert EAP MSK into a Kerberos key */
 
-    /* Convert MSK into a Kerberos key */
 #ifdef HAVE_HEIMDAL_VERSION
     code = krb5_random_to_key(krbContext, encryptionType, inputKey,
                               MIN(inputKeyLength, randomLength), &kd);
@@ -172,8 +156,15 @@ gssEapDeriveRfc3961Key(OM_uint32 *minor,
     data.length = MIN(inputKeyLength, randomLength);
     data.data = (char *)inputKey;
 
+    KRB_KEY_DATA(&kd) = KRB_MALLOC(keyLength);
+    if (KRB_KEY_DATA(&kd) == NULL) {
+        code = ENOMEM;
+        goto cleanup;
+    }
+    KRB_KEY_LENGTH(&kd) = keyLength;
+
     code = krb5_c_random_to_key(krbContext, encryptionType, &data, &kd);
-#endif
+#endif /* HAVE_HEIMDAL_VERSION */
     if (code != 0)
         goto cleanup;
 
@@ -188,21 +179,24 @@ gssEapDeriveRfc3961Key(OM_uint32 *minor,
     if (code != 0)
         goto cleanup;
 
+#ifndef HAVE_HEIMDAL_VERSION
+    /* Same API, but different allocation rules, unfortunately. */
     t.length = prfLength;
     t.data = GSSEAP_MALLOC(t.length);
     if (t.data == NULL) {
         code = ENOMEM;
         goto cleanup;
     }
+#endif
 
-    prfOut.length = randomLength;
-    prfOut.data = GSSEAP_MALLOC(prfOut.length);
-    if (prfOut.data == NULL) {
+    derivedKeyData.length = randomLength;
+    derivedKeyData.data = GSSEAP_MALLOC(derivedKeyData.length);
+    if (derivedKeyData.data == NULL) {
         code = ENOMEM;
         goto cleanup;
     }
 
-    for (i = 0, p = (unsigned char *)prfOut.data, remain = randomLength;
+    for (i = 0, p = (unsigned char *)derivedKeyData.data, remain = randomLength;
          remain > 0;
          p += t.length, remain -= t.length, i++)
     {
@@ -217,31 +211,38 @@ gssEapDeriveRfc3961Key(OM_uint32 *minor,
 
     /* Finally, convert PRF output into a new key which we will return */
 #ifdef HAVE_HEIMDAL_VERSION
+    krb5_free_keyblock_contents(krbContext, &kd);
+    KRB_KEY_INIT(&kd);
+
     code = krb5_random_to_key(krbContext, encryptionType,
-                              prfOut.data, prfOut.length, &kd);
+                              derivedKeyData.data, derivedKeyData.length, &kd);
 #else
-    code = krb5_c_random_to_key(krbContext, encryptionType, &prfOut, &kd);
+    code = krb5_c_random_to_key(krbContext, encryptionType,
+                                &derivedKeyData, &kd);
 #endif
     if (code != 0)
         goto cleanup;
 
     *pKey = kd;
-    KRB_KEY_DATA(&kd) = NULL;
 
 cleanup:
-    if (KRB_KEY_DATA(&kd) != NULL) {
-        memset(KRB_KEY_DATA(&kd), 0, KRB_KEY_LENGTH(&kd));
-        GSSEAP_FREE(KRB_KEY_DATA(&kd));
-    }
+    if (code != 0)
+        krb5_free_keyblock_contents(krbContext, &kd);
+#ifdef HAVE_HEIMDAL_VERSION
+    krb5_free_data_contents(krbContext, &t);
+#else
     if (t.data != NULL) {
         memset(t.data, 0, t.length);
         GSSEAP_FREE(t.data);
     }
-    if (prfOut.data != NULL) {
-        memset(prfOut.data, 0, prfOut.length);
-        GSSEAP_FREE(prfOut.data);
+#endif
+    if (derivedKeyData.data != NULL) {
+        memset(derivedKeyData.data, 0, derivedKeyData.length);
+        GSSEAP_FREE(derivedKeyData.data);
     }
+
     *minor = code;
+
     return (code == 0) ? GSS_S_COMPLETE : GSS_S_FAILURE;
 }
 
@@ -269,8 +270,7 @@ rfc3961ChecksumTypeForKey(OM_uint32 *minor,
     if (*minor != 0)
         return GSS_S_FAILURE;
 #else
-    data.length = 0;
-    data.data = NULL;
+    KRB_DATA_INIT(&data);
 
     memset(&cksum, 0, sizeof(cksum));
 
@@ -293,7 +293,7 @@ rfc3961ChecksumTypeForKey(OM_uint32 *minor,
 #endif /* HAVE_KRB5INT_C_MANDATORY_CKSUMTYPE */
 
     if (!krb5_c_is_keyed_cksum(*cksumtype)) {
-        *minor = KRB5KRB_AP_ERR_INAPP_CKSUM;
+        *minor = (OM_uint32)KRB5KRB_AP_ERR_INAPP_CKSUM;
         return GSS_S_FAILURE;
     }
 
@@ -476,7 +476,7 @@ krbMakeAuthDataKdcIssued(krb5_context context,
     if (code != 0)
         goto cleanup;
 
-    GSSEAP_FREE(buf);
+    free(buf); /* match ASN1_MALLOC_ENCODE */
     buf = NULL;
 
     ASN1_MALLOC_ENCODE(AD_KDCIssued, buf, buf_size, &kdcIssued, &len, code);
@@ -493,7 +493,7 @@ krbMakeAuthDataKdcIssued(krb5_context context,
 
 cleanup:
     if (buf != NULL)
-        GSSEAP_FREE(buf);
+        free(buf); /* match ASN1_MALLOC_ENCODE */
     if (crypto != NULL)
         krb5_crypto_destroy(context, crypto);
     free_Checksum(&kdcIssued.ad_checksum);

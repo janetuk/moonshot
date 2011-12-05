@@ -43,7 +43,7 @@ gssEapAllocContext(OM_uint32 *minor,
     OM_uint32 tmpMinor;
     gss_ctx_id_t ctx;
 
-    assert(*pCtx == GSS_C_NO_CONTEXT);
+    GSSEAP_ASSERT(*pCtx == GSS_C_NO_CONTEXT);
 
     ctx = (gss_ctx_id_t)GSSEAP_CALLOC(1, sizeof(*ctx));
     if (ctx == NULL) {
@@ -52,12 +52,13 @@ gssEapAllocContext(OM_uint32 *minor,
     }
 
     if (GSSEAP_MUTEX_INIT(&ctx->mutex) != 0) {
-        *minor = errno;
+        *minor = GSSEAP_GET_LAST_ERROR();
         gssEapReleaseContext(&tmpMinor, &ctx);
         return GSS_S_FAILURE;
     }
 
     ctx->state = GSSEAP_STATE_INITIAL;
+    ctx->mechanismUsed = GSS_C_NO_OID;
 
     /*
      * Integrity, confidentiality, sequencing and replay detection are
@@ -83,6 +84,7 @@ releaseInitiatorContext(struct gss_eap_initiator_ctx *ctx)
     eap_peer_sm_deinit(ctx->eap);
 }
 
+#ifdef GSSEAP_ENABLE_ACCEPTOR
 static void
 releaseAcceptorContext(struct gss_eap_acceptor_ctx *ctx)
 {
@@ -98,6 +100,7 @@ releaseAcceptorContext(struct gss_eap_acceptor_ctx *ctx)
     if (ctx->vps != NULL)
         gssEapRadiusFreeAvps(&tmpMinor, &ctx->vps);
 }
+#endif /* GSSEAP_ENABLE_ACCEPTOR */
 
 OM_uint32
 gssEapReleaseContext(OM_uint32 *minor,
@@ -117,19 +120,22 @@ gssEapReleaseContext(OM_uint32 *minor,
     if (ctx->flags & CTX_FLAG_KRB_REAUTH) {
         gssDeleteSecContext(&tmpMinor, &ctx->reauthCtx, GSS_C_NO_BUFFER);
     } else
-#endif
+#endif /* GSSEAP_ENABLE_REAUTH */
     if (CTX_IS_INITIATOR(ctx)) {
         releaseInitiatorContext(&ctx->initiatorCtx);
-    } else {
+    }
+#ifdef GSSEAP_ENABLE_ACCEPTOR
+    else {
         releaseAcceptorContext(&ctx->acceptorCtx);
     }
+#endif /* GSSEAP_ENABLE_ACCEPTOR */
 
     krb5_free_keyblock_contents(krbContext, &ctx->rfc3961Key);
     gssEapReleaseName(&tmpMinor, &ctx->initiatorName);
     gssEapReleaseName(&tmpMinor, &ctx->acceptorName);
     gssEapReleaseOid(&tmpMinor, &ctx->mechanismUsed);
     sequenceFree(&tmpMinor, &ctx->seqState);
-    gssEapReleaseCred(&tmpMinor, &ctx->defaultCred);
+    gssEapReleaseCred(&tmpMinor, &ctx->cred);
 
     GSSEAP_MUTEX_DESTROY(&ctx->mutex);
 
@@ -149,6 +155,8 @@ gssEapMakeToken(OM_uint32 *minor,
                 gss_buffer_t outputToken)
 {
     unsigned char *p;
+
+    GSSEAP_ASSERT(ctx->mechanismUsed != GSS_C_NO_OID);
 
     outputToken->length = tokenSize(ctx->mechanismUsed, innerToken->length);
     outputToken->value = GSSEAP_MALLOC(outputToken->length);
@@ -245,7 +253,7 @@ gssEapMakeOrVerifyTokenMIC(OM_uint32 *minor,
 
     tokens = verifyMIC ? ctx->inputTokens : ctx->outputTokens;
 
-    assert(tokens != NULL);
+    GSSEAP_ASSERT(tokens != NULL);
 
     iov = GSSEAP_CALLOC(2 + (3 * tokens->buffers.count) + 1, sizeof(*iov));
     if (iov == NULL) {
@@ -269,7 +277,7 @@ gssEapMakeOrVerifyTokenMIC(OM_uint32 *minor,
     }
 
     /* Mechanism OID */
-    assert(ctx->mechanismUsed != GSS_C_NO_OID);
+    GSSEAP_ASSERT(ctx->mechanismUsed != GSS_C_NO_OID);
     iov[i].type = GSS_IOV_BUFFER_TYPE_DATA;
     iov[i].buffer.length = ctx->mechanismUsed->length;
     iov[i].buffer.value = ctx->mechanismUsed->elements;
@@ -315,18 +323,12 @@ gssEapMakeOrVerifyTokenMIC(OM_uint32 *minor,
     }
 
     if (verifyMIC) {
-        assert(tokenMIC->length >= 16);
+        GSSEAP_ASSERT(tokenMIC->length >= 16);
 
-        assert(i < 2 + (3 * tokens->buffers.count));
+        GSSEAP_ASSERT(i < 2 + (3 * tokens->buffers.count));
 
         iov[i].type = GSS_IOV_BUFFER_TYPE_HEADER;
-        iov[i].buffer.length = 16;
-        iov[i].buffer.value = tokenMIC->value;
-        i++;
-
-        iov[i].type = GSS_IOV_BUFFER_TYPE_TRAILER;
-        iov[i].buffer.length = tokenMIC->length - 16;
-        iov[i].buffer.value = (unsigned char *)tokenMIC->value + 16;
+        iov[i].buffer = *tokenMIC;
         i++;
 
         major = gssEapUnwrapOrVerifyMIC(minor, ctx, NULL, NULL,

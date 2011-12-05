@@ -248,7 +248,7 @@ gssEapWrapOrGetMIC(OM_uint32 *minor,
         if (code != 0)
             goto cleanup;
 
-        assert(gssTrailerLen <= 0xFFFF);
+        GSSEAP_ASSERT(gssTrailerLen <= 0xFFFF);
 
         if (trailer == NULL) {
             rrc = gssTrailerLen;
@@ -336,7 +336,7 @@ cleanup:
     return (code == 0) ? GSS_S_COMPLETE : GSS_S_FAILURE;
 }
 
-OM_uint32
+OM_uint32 GSSAPI_CALLCONV
 gss_wrap_iov(OM_uint32 *minor,
              gss_ctx_id_t ctx,
              int conf_req_flag,

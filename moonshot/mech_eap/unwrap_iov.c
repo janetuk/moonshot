@@ -103,7 +103,7 @@ unwrapToken(OM_uint32 *minor,
         *qop_state = GSS_C_QOP_DEFAULT;
 
     header = gssEapLocateIov(iov, iov_count, GSS_IOV_BUFFER_TYPE_HEADER);
-    assert(header != NULL);
+    GSSEAP_ASSERT(header != NULL);
 
     padding = gssEapLocateIov(iov, iov_count, GSS_IOV_BUFFER_TYPE_PADDING);
     if (padding != NULL && padding->buffer.length != 0) {
@@ -243,7 +243,14 @@ unwrapToken(OM_uint32 *minor,
             goto defective;
         seqnum = load_uint64_be(ptr + 8);
 
-        code = gssEapVerify(krbContext, ctx->checksumType, 0,
+        /*
+         * Although MIC tokens don't have a RRC, they are similarly
+         * composed of a header and a checksum. So the verify_mic()
+         * can be implemented with a single header buffer, fake the
+         * RRC to the putative trailer length if no trailer buffer.
+         */
+        code = gssEapVerify(krbContext, ctx->checksumType,
+                            trailer != NULL ? 0 : header->buffer.length - 16,
                             KRB_CRYPTO_CONTEXT(ctx), keyUsage,
                             iov, iov_count, &valid);
         if (code != 0 || valid == FALSE) {
@@ -330,7 +337,7 @@ unwrapStream(OM_uint32 *minor,
 
     GSSEAP_KRB_INIT(&krbContext);
 
-    assert(toktype == TOK_TYPE_WRAP);
+    GSSEAP_ASSERT(toktype == TOK_TYPE_WRAP);
 
     if (toktype != TOK_TYPE_WRAP) {
         code = GSSEAP_WRONG_TOK_ID;
@@ -338,7 +345,7 @@ unwrapStream(OM_uint32 *minor,
     }
 
     stream = gssEapLocateIov(iov, iov_count, GSS_IOV_BUFFER_TYPE_STREAM);
-    assert(stream != NULL);
+    GSSEAP_ASSERT(stream != NULL);
 
     if (stream->buffer.length < 16) {
         major = GSS_S_DEFECTIVE_TOKEN;
@@ -346,7 +353,7 @@ unwrapStream(OM_uint32 *minor,
     }
 
     ptr = (unsigned char *)stream->buffer.value;
-    ptr += 2; /*skip token type*/
+    ptr += 2; /* skip token type */
 
     tiov = (gss_iov_buffer_desc *)GSSEAP_CALLOC((size_t)iov_count + 2,
                                                 sizeof(gss_iov_buffer_desc));
@@ -458,7 +465,7 @@ unwrapStream(OM_uint32 *minor,
     tdata->buffer.length = stream->buffer.length - ttrailer->buffer.length -
         tpadding->buffer.length - theader->buffer.length;
 
-    assert(data != NULL);
+    GSSEAP_ASSERT(data != NULL);
 
     if (data->type & GSS_IOV_BUFFER_FLAG_ALLOCATE) {
         code = gssEapAllocIov(tdata, tdata->buffer.length);
@@ -473,7 +480,7 @@ unwrapStream(OM_uint32 *minor,
                               theader->buffer.length;
     }
 
-    assert(i <= iov_count + 2);
+    GSSEAP_ASSERT(i <= iov_count + 2);
 
     major = unwrapToken(&code, ctx, KRB_CRYPTO_CONTEXT(ctx),
                         conf_state, qop_state, tiov, i, toktype);
@@ -528,7 +535,7 @@ gssEapUnwrapOrVerifyMIC(OM_uint32 *minor,
     return major;
 }
 
-OM_uint32
+OM_uint32 GSSAPI_CALLCONV
 gss_unwrap_iov(OM_uint32 *minor,
                gss_ctx_id_t ctx,
                int *conf_state,

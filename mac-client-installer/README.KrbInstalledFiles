@@ -1,0 +1,235 @@
+total 0
+drwxr-xr-x  3 pete  102 30 Nov 08:29 usr/
+
+krb/usr:
+total 0
+drwxr-xr-x  8 pete  272 30 Nov 08:29 local/
+
+krb/usr/local:
+total 0
+drwxr-xr-x  16 pete   544 30 Nov 08:31 bin/
+drwxr-xr-x  11 pete   374 30 Nov 08:31 include/
+drwxr-xr-x  33 pete  1122 30 Nov 08:45 lib/
+drwxr-xr-x  14 pete   476 30 Nov 08:31 sbin/
+drwxr-xr-x   6 pete   204 30 Nov 08:31 share/
+drwxr-xr-x   3 pete   102 30 Nov 08:29 var/
+
+krb/usr/local/bin:
+total 608
+-rwxr-xr-x  1 pete    448 30 Nov 08:31 compile_et
+-rwxr-xr-x  1 pete  26292 30 Nov 08:31 gss-client
+-rwxr-xr-x@ 1 pete   1914 30 Nov 08:31 k5srvutil
+-rwxr-xr-x  1 pete  79988 30 Nov 08:31 kadmin
+-rwxr-xr-x  1 pete   9628 30 Nov 08:31 kdestroy
+-rwxr-xr-x  1 pete  22808 30 Nov 08:31 kinit
+-rwxr-xr-x  1 pete  22080 30 Nov 08:31 klist
+-rwxr-xr-x  1 pete  14920 30 Nov 08:31 kpasswd
+-rwxr-xr-x  1 pete   5738 30 Nov 08:31 krb5-config
+-rwxr-xr-x  1 pete  37460 30 Nov 08:31 ktutil
+-rwxr-xr-x  1 pete  15732 30 Nov 08:31 kvno
+-rwxr-xr-x  1 pete  15068 30 Nov 08:31 sclient
+-rwxr-xr-x  1 pete  15428 30 Nov 08:31 sim_client
+-rwxr-xr-x  1 pete  14956 30 Nov 08:31 uuclient
+
+krb/usr/local/include:
+total 152
+-rw-r--r--@  1 pete   1978 30 Nov 08:31 com_err.h
+drwxr-xr-x   8 pete    272 30 Nov 08:45 gssapi/
+-rw-r--r--@  1 pete    181 30 Nov 08:31 gssapi.h
+drwxr-xr-x  18 pete    612 30 Nov 08:31 gssrpc/
+drwxr-xr-x   5 pete    170 30 Nov 08:31 kadm5/
+-rw-r--r--@  1 pete  56808 30 Nov 08:31 kdb.h
+drwxr-xr-x   7 pete    238 30 Nov 08:31 krb5/
+-rw-r--r--@  1 pete    402 30 Nov 08:31 krb5.h
+-rw-r--r--   1 pete   6105 30 Nov 08:31 profile.h
+
+krb/usr/local/include/gssapi:
+total 136
+-rw-r--r--  1 pete  29935 30 Nov 08:31 gssapi.h
+-rw-r--r--  1 pete   3051 30 Nov 08:45 gssapi_eap.h
+-rw-r--r--@ 1 pete  12088 30 Nov 08:31 gssapi_ext.h
+-rw-r--r--@ 1 pete   2268 30 Nov 08:31 gssapi_generic.h
+-rw-r--r--  1 pete  11709 30 Nov 08:31 gssapi_krb5.h
+-rw-r--r--@ 1 pete   1652 30 Nov 08:31 mechglue.h
+
+krb/usr/local/include/gssrpc:
+total 224
+-rw-r--r--@ 1 pete   6789 30 Nov 08:31 auth.h
+-rw-r--r--@ 1 pete   4825 30 Nov 08:31 auth_gss.h
+-rw-r--r--@ 1 pete   3952 30 Nov 08:31 auth_gssapi.h
+-rw-r--r--@ 1 pete   2896 30 Nov 08:31 auth_unix.h
+-rw-r--r--@ 1 pete   9660 30 Nov 08:31 clnt.h
+-rw-r--r--@ 1 pete   2411 30 Nov 08:31 netdb.h
+-rw-r--r--@ 1 pete   3429 30 Nov 08:31 pmap_clnt.h
+-rw-r--r--@ 1 pete   3841 30 Nov 08:31 pmap_prot.h
+-rw-r--r--@ 1 pete   2303 30 Nov 08:31 pmap_rmt.h
+-rw-r--r--@ 1 pete  10734 30 Nov 08:31 rename.h
+-rw-r--r--@ 1 pete   3861 30 Nov 08:31 rpc.h
+-rw-r--r--@ 1 pete   5106 30 Nov 08:31 rpc_msg.h
+-rw-r--r--@ 1 pete  11595 30 Nov 08:31 svc.h
+-rw-r--r--@ 1 pete   3976 30 Nov 08:31 svc_auth.h
+-rw-r--r--  1 pete   4947 30 Nov 08:31 types.h
+-rw-r--r--@ 1 pete  11779 30 Nov 08:31 xdr.h
+
+krb/usr/local/include/kadm5:
+total 64
+-rw-r--r--@ 1 pete  21418 30 Nov 08:31 admin.h
+-rw-r--r--  1 pete   1572 30 Nov 08:31 chpass_util_strings.h
+-rw-r--r--  1 pete   4064 30 Nov 08:31 kadm_err.h
+
+krb/usr/local/include/krb5:
+total 312
+-rw-r--r--@ 1 pete    5742 30 Nov 08:31 kadm5_hook_plugin.h
+-rw-r--r--  1 pete  134599 30 Nov 08:31 krb5.h
+-rw-r--r--@ 1 pete    2648 30 Nov 08:31 locate_plugin.h
+-rw-r--r--@ 1 pete    2111 30 Nov 08:31 plugin.h
+-rw-r--r--@ 1 pete    4452 30 Nov 08:31 pwqual_plugin.h
+
+krb/usr/local/lib:
+total 3976
+drwxr-xr-x  4 pete     136 30 Nov 08:45 gss/
+drwxr-xr-x  3 pete     102 30 Nov 08:29 krb5/
+-rw-r--r--  1 pete   16912 30 Nov 08:31 libcom_err.3.0.dylib
+lrwxr-xr-x  1 pete      20 30 Nov 08:31 libcom_err.3.dylib -> libcom_err.3.0.dylib
+lrwxr-xr-x  1 pete      20 30 Nov 08:31 libcom_err.dylib -> libcom_err.3.0.dylib
+-rw-r--r--  1 pete  287084 30 Nov 08:31 libgssapi_krb5.2.2.dylib
+lrwxr-xr-x  1 pete      24 30 Nov 08:31 libgssapi_krb5.2.dylib -> libgssapi_krb5.2.2.dylib
+lrwxr-xr-x  1 pete      24 30 Nov 08:31 libgssapi_krb5.dylib -> libgssapi_krb5.2.2.dylib
+-rw-r--r--  1 pete  142060 30 Nov 08:31 libgssrpc.4.1.dylib
+lrwxr-xr-x  1 pete      19 30 Nov 08:31 libgssrpc.4.dylib -> libgssrpc.4.1.dylib
+lrwxr-xr-x  1 pete      19 30 Nov 08:31 libgssrpc.dylib -> libgssrpc.4.1.dylib
+-rw-r--r--  1 pete  195184 30 Nov 08:31 libk5crypto.3.1.dylib
+lrwxr-xr-x  1 pete      21 30 Nov 08:31 libk5crypto.3.dylib -> libk5crypto.3.1.dylib
+lrwxr-xr-x  1 pete      21 30 Nov 08:31 libk5crypto.dylib -> libk5crypto.3.1.dylib
+lrwxr-xr-x  1 pete      22 30 Nov 08:31 libkadm5clnt.dylib -> libkadm5clnt_mit.dylib
+-rw-r--r--  1 pete   96332 30 Nov 08:31 libkadm5clnt_mit.8.0.dylib
+lrwxr-xr-x  1 pete      26 30 Nov 08:31 libkadm5clnt_mit.8.dylib -> libkadm5clnt_mit.8.0.dylib
+lrwxr-xr-x  1 pete      26 30 Nov 08:31 libkadm5clnt_mit.dylib -> libkadm5clnt_mit.8.0.dylib
+lrwxr-xr-x  1 pete      21 30 Nov 08:31 libkadm5srv.dylib -> libkadm5srv_mit.dylib
+-rw-r--r--  1 pete  129380 30 Nov 08:31 libkadm5srv_mit.8.0.dylib
+lrwxr-xr-x  1 pete      25 30 Nov 08:31 libkadm5srv_mit.8.dylib -> libkadm5srv_mit.8.0.dylib
+lrwxr-xr-x  1 pete      25 30 Nov 08:31 libkadm5srv_mit.dylib -> libkadm5srv_mit.8.0.dylib
+-rw-r--r--  1 pete   78932 30 Nov 08:31 libkdb5.5.0.dylib
+lrwxr-xr-x  1 pete      17 30 Nov 08:31 libkdb5.5.dylib -> libkdb5.5.0.dylib
+lrwxr-xr-x  1 pete      17 30 Nov 08:31 libkdb5.dylib -> libkdb5.5.0.dylib
+-rw-r--r--  1 pete  950624 30 Nov 08:31 libkrb5.3.3.dylib
+lrwxr-xr-x  1 pete      17 30 Nov 08:31 libkrb5.3.dylib -> libkrb5.3.3.dylib
+lrwxr-xr-x  1 pete      17 30 Nov 08:31 libkrb5.dylib -> libkrb5.3.3.dylib
+-rw-r--r--  1 pete   34888 30 Nov 08:31 libkrb5support.1.1.dylib
+lrwxr-xr-x  1 pete      24 30 Nov 08:31 libkrb5support.1.dylib -> libkrb5support.1.1.dylib
+lrwxr-xr-x  1 pete      24 30 Nov 08:31 libkrb5support.dylib -> libkrb5support.1.1.dylib
+
+krb/usr/local/lib/gss:
+total 688
+-rwxr-xr-x  1 pete    1067 30 Nov 08:45 mech_eap.la
+-rwxr-xr-x  1 pete  345264 30 Nov 08:45 mech_eap.so
+
+krb/usr/local/lib/krb5:
+total 0
+drwxr-xr-x  6 pete  204 30 Nov 08:29 plugins/
+
+krb/usr/local/lib/krb5/plugins:
+total 0
+drwxr-xr-x  2 pete   68 30 Nov 08:29 authdata/
+drwxr-xr-x  3 pete  102 30 Nov 08:31 kdb/
+drwxr-xr-x  2 pete   68 30 Nov 08:29 libkrb5/
+drwxr-xr-x  4 pete  136 30 Nov 08:31 preauth/
+
+krb/usr/local/lib/krb5/plugins/authdata:
+
+krb/usr/local/lib/krb5/plugins/kdb:
+total 240
+-rw-r--r--  1 pete  122852 30 Nov 08:31 db2.so
+
+krb/usr/local/lib/krb5/plugins/libkrb5:
+
+krb/usr/local/lib/krb5/plugins/preauth:
+total 272
+-rw-r--r--  1 pete   14792 30 Nov 08:31 encrypted_challenge.so
+-rw-r--r--  1 pete  120376 30 Nov 08:31 pkinit.so
+
+krb/usr/local/sbin:
+total 1176
+-rwxr-xr-x  1 pete   21480 30 Nov 08:31 gss-server
+-rwxr-xr-x  1 pete   80220 30 Nov 08:31 kadmin.local
+-rwxr-xr-x  1 pete  108324 30 Nov 08:31 kadmind
+-rwxr-xr-x  1 pete   98652 30 Nov 08:31 kdb5_util
+-rwxr-xr-x  1 pete   23144 30 Nov 08:31 kprop
+-rwxr-xr-x  1 pete   36256 30 Nov 08:31 kpropd
+-rwxr-xr-x  1 pete   18628 30 Nov 08:31 kproplog
+-rwxr-xr-x  1 pete   14361 30 Nov 08:31 krb5-send-pr
+-rwxr-xr-x  1 pete  134792 30 Nov 08:31 krb5kdc
+-rwxr-xr-x  1 pete   14804 30 Nov 08:31 sim_server
+-rwxr-xr-x  1 pete   14936 30 Nov 08:31 sserver
+-rwxr-xr-x  1 pete   14504 30 Nov 08:31 uuserver
+
+krb/usr/local/share:
+total 0
+drwxr-xr-x  4 pete  136 30 Nov 08:31 et/
+drwxr-xr-x  3 pete  102 30 Nov 08:29 examples/
+drwxr-xr-x  3 pete  102 30 Nov 08:31 gnats/
+drwxr-xr-x  5 pete  170 30 Nov 08:29 man/
+
+krb/usr/local/share/et:
+total 24
+-rw-r--r--@ 1 pete  4901 30 Nov 08:31 et_c.awk
+-rw-r--r--@ 1 pete  3918 30 Nov 08:31 et_h.awk
+
+krb/usr/local/share/examples:
+total 0
+drwxr-xr-x  5 pete  170 30 Nov 08:31 krb5/
+
+krb/usr/local/share/examples/krb5:
+total 24
+-rw-r--r--@ 1 pete   362 30 Nov 08:31 kdc.conf
+-rw-r--r--@ 1 pete   546 30 Nov 08:31 krb5.conf
+-rw-r--r--@ 1 pete  1493 30 Nov 08:31 services.append
+
+krb/usr/local/share/gnats:
+total 8
+-rw-r--r--@ 1 pete  99 30 Nov 08:31 mit
+
+krb/usr/local/share/man:
+total 0
+drwxr-xr-x  16 pete  544 30 Nov 08:31 man1/
+drwxr-xr-x   5 pete  170 30 Nov 08:31 man5/
+drwxr-xr-x  10 pete  340 30 Nov 08:31 man8/
+
+krb/usr/local/share/man/man1:
+total 216
+-rw-r--r--@ 1 pete   2151 30 Nov 08:31 compile_et.1
+-rw-r--r--@ 1 pete   1724 30 Nov 08:31 k5srvutil.1
+-rw-r--r--@ 1 pete  25527 30 Nov 08:31 kadmin.1
+-rw-r--r--@ 1 pete   2920 30 Nov 08:31 kdestroy.1
+-rw-r--r--@ 1 pete   4327 30 Nov 08:31 kerberos.1
+-rw-r--r--@ 1 pete   7271 30 Nov 08:31 kinit.1
+-rw-r--r--@ 1 pete   3636 30 Nov 08:31 klist.1
+-rw-r--r--@ 1 pete   2665 30 Nov 08:31 kpasswd.1
+-rw-r--r--@ 1 pete   2602 30 Nov 08:31 krb5-config.1
+-rw-r--r--  1 pete   8205 30 Nov 08:31 krb5-send-pr.1
+-rw-r--r--@ 1 pete  16269 30 Nov 08:31 ksu.1
+-rw-r--r--@ 1 pete   1340 30 Nov 08:31 ktutil.1
+-rw-r--r--@ 1 pete   3076 30 Nov 08:31 kvno.1
+-rw-r--r--@ 1 pete   1574 30 Nov 08:31 sclient.1
+
+krb/usr/local/share/man/man5:
+total 80
+-rw-r--r--@ 1 pete   8682 30 Nov 08:31 kdc.conf.5
+-rw-r--r--@ 1 pete  27435 30 Nov 08:31 krb5.conf.5
+
+krb/usr/local/share/man/man8:
+total 120
+-rw-r--r--@ 1 pete    18 30 Nov 08:31 kadmin.local.8
+-rw-r--r--@ 1 pete  9465 30 Nov 08:31 kadmind.8
+-rw-r--r--@ 1 pete  9198 30 Nov 08:31 kdb5_util.8
+-rw-r--r--@ 1 pete  2519 30 Nov 08:31 kprop.8
+-rw-r--r--@ 1 pete  4933 30 Nov 08:31 kpropd.8
+-rw-r--r--@ 1 pete  3518 30 Nov 08:31 kproplog.8
+-rw-r--r--@ 1 pete  5706 30 Nov 08:31 krb5kdc.8
+-rw-r--r--@ 1 pete  4433 30 Nov 08:31 sserver.8
+
+krb/usr/local/var:
+total 0
+drwxr-xr-x  2 pete  68 30 Nov 08:29 krb5kdc/
+
+krb/usr/local/var/krb5kdc:

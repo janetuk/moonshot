@@ -60,12 +60,12 @@
 #include "gssapiP_eap.h"
 
 OM_uint32
-gss_pseudo_random(OM_uint32 *minor,
-                  gss_ctx_id_t ctx,
-                  int prf_key,
-                  const gss_buffer_t prf_in,
-                  ssize_t desired_output_len,
-                  gss_buffer_t prf_out)
+gssEapPseudoRandom(OM_uint32 *minor,
+                   gss_ctx_id_t ctx,
+                   int prf_key,
+                   const gss_buffer_t prf_in,
+                   ssize_t desired_output_len,
+                   gss_buffer_t prf_out)
 {
     krb5_error_code code;
     int i;
@@ -78,28 +78,12 @@ gss_pseudo_random(OM_uint32 *minor,
     prf_out->length = 0;
     prf_out->value = NULL;
 
-    if (ctx == GSS_C_NO_CONTEXT) {
-        *minor = EINVAL;
-        return GSS_S_CALL_INACCESSIBLE_READ | GSS_S_NO_CONTEXT;
-    }
-
     *minor = 0;
-
-    GSSEAP_MUTEX_LOCK(&ctx->mutex);
-
-    if (!CTX_IS_ESTABLISHED(ctx)) {
-        GSSEAP_MUTEX_UNLOCK(&ctx->mutex);
-        *minor = GSSEAP_CONTEXT_INCOMPLETE;
-        return GSS_S_NO_CONTEXT;
-    }
 
     GSSEAP_KRB_INIT(&krbContext);
 
-    t.length = 0;
-    t.data = NULL;
-
-    ns.length = 0;
-    ns.data = NULL;
+    KRB_DATA_INIT(&t);
+    KRB_DATA_INIT(&ns);
 
     if (prf_key != GSS_C_PRF_KEY_PARTIAL &&
         prf_key != GSS_C_PRF_KEY_FULL) {
@@ -127,14 +111,17 @@ gss_pseudo_random(OM_uint32 *minor,
         goto cleanup;
     }
 
+#ifndef HAVE_HEIMDAL_VERSION
+    /* Same API, but different allocation rules, unfortunately. */
     t.length = prflen;
     t.data = GSSEAP_MALLOC(t.length);
     if (t.data == NULL) {
         code = ENOMEM;
         goto cleanup;
     }
+#endif
 
-    memcpy(ns.data + 4, prf_in->value, prf_in->length);
+    memcpy((unsigned char *)ns.data + 4, prf_in->value, prf_in->length);
     i = 0;
     p = (unsigned char *)prf_out->value;
     while (desired_output_len > 0) {
@@ -152,14 +139,57 @@ gss_pseudo_random(OM_uint32 *minor,
     }
 
 cleanup:
-    GSSEAP_MUTEX_UNLOCK(&ctx->mutex);
-
     if (code != 0)
         gss_release_buffer(&tmpMinor, prf_out);
-    krb5_free_data_contents(krbContext, &ns);
+    if (ns.data != NULL) {
+        memset(ns.data, 0, ns.length);
+        GSSEAP_FREE(ns.data);
+    }
+#ifdef HAVE_HEIMDAL_VERSION
     krb5_free_data_contents(krbContext, &t);
+#else
+    if (t.data != NULL) {
+        memset(t.data, 0, t.length);
+        GSSEAP_FREE(t.data);
+    }
+#endif
 
     *minor = code;
 
     return (code == 0) ? GSS_S_COMPLETE : GSS_S_FAILURE;
+}
+
+OM_uint32 GSSAPI_CALLCONV
+gss_pseudo_random(OM_uint32 *minor,
+                  gss_ctx_id_t ctx,
+                  int prf_key,
+                  const gss_buffer_t prf_in,
+                  ssize_t desired_output_len,
+                  gss_buffer_t prf_out)
+{
+    OM_uint32 major;
+
+    if (ctx == GSS_C_NO_CONTEXT) {
+        *minor = EINVAL;
+        return GSS_S_CALL_INACCESSIBLE_READ | GSS_S_NO_CONTEXT;
+    }
+
+    prf_out->length = 0;
+    prf_out->value = NULL;
+
+    *minor = 0;
+
+    GSSEAP_MUTEX_LOCK(&ctx->mutex);
+
+    if (CTX_IS_ESTABLISHED(ctx)) {
+        major = gssEapPseudoRandom(minor, ctx, prf_key,
+                                   prf_in, desired_output_len, prf_out);
+    } else {
+        major = GSS_S_NO_CONTEXT;
+        *minor = GSSEAP_CONTEXT_INCOMPLETE;
+    }
+
+    GSSEAP_MUTEX_UNLOCK(&ctx->mutex);
+
+    return major;
 }

@@ -328,7 +328,7 @@ setAcceptorIdentity(OM_uint32 *minor,
     krb5_principal krbPrinc;
     struct rs_context *rc = ctx->acceptorCtx.radContext;
 
-    assert(rc != NULL);
+    GSSEAP_ASSERT(rc != NULL);
 
     if (ctx->acceptorName == GSS_C_NO_NAME) {
         *minor = 0;
@@ -343,8 +343,8 @@ setAcceptorIdentity(OM_uint32 *minor,
     GSSEAP_KRB_INIT(&krbContext);
 
     krbPrinc = ctx->acceptorName->krbPrincipal;
-    assert(krbPrinc != NULL);
-    assert(KRB_PRINC_LENGTH(krbPrinc) >= 2);
+    GSSEAP_ASSERT(krbPrinc != NULL);
+    GSSEAP_ASSERT(KRB_PRINC_LENGTH(krbPrinc) >= 2);
 
     /* Acceptor-Service-Name */
     krbPrincComponentToGssBuffer(krbPrinc, 0, &nameBuf);
@@ -418,58 +418,35 @@ createRadiusHandle(OM_uint32 *minor,
                    gss_ctx_id_t ctx)
 {
     struct gss_eap_acceptor_ctx *actx = &ctx->acceptorCtx;
-    const char *configFile = RS_CONFIG_FILE;
-    const char *configStanza = "gss-eap";
-    struct rs_alloc_scheme ralloc;
     struct rs_error *err;
+    const char *configStanza = "gss-eap";
+    OM_uint32 major;
 
-    assert(actx->radContext == NULL);
-    assert(actx->radConn == NULL);
+    GSSEAP_ASSERT(actx->radContext == NULL);
+    GSSEAP_ASSERT(actx->radConn == NULL);
+    GSSEAP_ASSERT(cred != GSS_C_NO_CREDENTIAL);
 
-    if (rs_context_create(&actx->radContext) != 0) {
-        *minor = GSSEAP_RADSEC_CONTEXT_FAILURE;
-        return GSS_S_FAILURE;
-    }
+    major = gssEapCreateRadiusContext(minor, cred, &actx->radContext);
+    if (GSS_ERROR(major))
+        return major;
 
-    if (cred->radiusConfigFile != NULL)
-        configFile = cred->radiusConfigFile;
-    if (cred->radiusConfigStanza != NULL)
-        configStanza = cred->radiusConfigStanza;
-
-    ralloc.calloc  = GSSEAP_CALLOC;
-    ralloc.malloc  = GSSEAP_MALLOC;
-    ralloc.free    = GSSEAP_FREE;
-    ralloc.realloc = GSSEAP_REALLOC;
-
-    rs_context_set_alloc_scheme(actx->radContext, &ralloc);
-
-    if (rs_context_read_config(actx->radContext, configFile) != 0) {
-        err = rs_err_ctx_pop(actx->radContext);
-        goto fail;
-    }
-
-    if (rs_context_init_freeradius_dict(actx->radContext, NULL) != 0) {
-        err = rs_err_ctx_pop(actx->radContext);
-        goto fail;
-    }
+    if (cred->radiusConfigStanza.value != NULL)
+        configStanza = (const char *)cred->radiusConfigStanza.value;
 
     if (rs_conn_create(actx->radContext, &actx->radConn, configStanza) != 0) {
         err = rs_err_conn_pop(actx->radConn);
-        goto fail;
+        return gssEapRadiusMapError(minor, err);
     }
 
     if (actx->radServer != NULL) {
         if (rs_conn_select_peer(actx->radConn, actx->radServer) != 0) {
             err = rs_err_conn_pop(actx->radConn);
-            goto fail;
+            return gssEapRadiusMapError(minor, err);
         }
     }
 
     *minor = 0;
     return GSS_S_COMPLETE;
-
-fail:
-    return gssEapRadiusMapError(minor, err);
 }
 
 /*
@@ -550,7 +527,7 @@ eapGssSmAcceptAuthenticate(OM_uint32 *minor,
         goto cleanup;
     }
 
-    assert(resp != NULL);
+    GSSEAP_ASSERT(resp != NULL);
 
     frresp = rs_packet_frpkt(resp);
     switch (frresp->code) {
@@ -606,7 +583,7 @@ cleanup:
     if (resp != NULL)
         rs_packet_destroy(resp);
     if (GSSEAP_SM_STATE(ctx) == GSSEAP_STATE_INITIATOR_EXTS) {
-        assert(major == GSS_S_CONTINUE_NEEDED);
+        GSSEAP_ASSERT(major == GSS_S_CONTINUE_NEEDED);
 
         rs_conn_destroy(ctx->acceptorCtx.radConn);
         ctx->acceptorCtx.radConn = NULL;
@@ -631,7 +608,7 @@ eapGssSmAcceptGssFlags(OM_uint32 *minor,
     unsigned char *p;
     OM_uint32 initiatorGssFlags;
 
-    assert((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0);
+    GSSEAP_ASSERT((ctx->flags & CTX_FLAG_KRB_REAUTH) == 0);
 
     if (inputToken->length < 4) {
         *minor = GSSEAP_TOK_TRUNC;
@@ -859,8 +836,8 @@ static struct gss_eap_sm eapGssAcceptorSm[] = {
 };
 
 OM_uint32
-gss_accept_sec_context(OM_uint32 *minor,
-                       gss_ctx_id_t *context_handle,
+gssEapAcceptSecContext(OM_uint32 *minor,
+                       gss_ctx_id_t ctx,
                        gss_cred_id_t cred,
                        gss_buffer_t input_token,
                        gss_channel_bindings_t input_chan_bindings,
@@ -872,56 +849,37 @@ gss_accept_sec_context(OM_uint32 *minor,
                        gss_cred_id_t *delegated_cred_handle)
 {
     OM_uint32 major, tmpMinor;
-    gss_ctx_id_t ctx = *context_handle;
-
-    *minor = 0;
-
-    output_token->length = 0;
-    output_token->value = NULL;
-
-    if (src_name != NULL)
-        *src_name = GSS_C_NO_NAME;
-
-    if (input_token == GSS_C_NO_BUFFER || input_token->length == 0) {
-        *minor = GSSEAP_TOK_TRUNC;
-        return GSS_S_DEFECTIVE_TOKEN;
-    }
-
-    if (ctx == GSS_C_NO_CONTEXT) {
-        major = gssEapAllocContext(minor, &ctx);
-        if (GSS_ERROR(major))
-            return major;
-
-        *context_handle = ctx;
-    }
-
-    GSSEAP_MUTEX_LOCK(&ctx->mutex);
 
     if (cred == GSS_C_NO_CREDENTIAL) {
-        if (ctx->defaultCred == GSS_C_NO_CREDENTIAL) {
+        if (ctx->cred == GSS_C_NO_CREDENTIAL) {
             major = gssEapAcquireCred(minor,
                                       GSS_C_NO_NAME,
-                                      GSS_C_NO_BUFFER,
                                       GSS_C_INDEFINITE,
                                       GSS_C_NO_OID_SET,
                                       GSS_C_ACCEPT,
-                                      &ctx->defaultCred,
+                                      &ctx->cred,
                                       NULL,
                                       NULL);
             if (GSS_ERROR(major))
                 goto cleanup;
         }
 
-        cred = ctx->defaultCred;
+        cred = ctx->cred;
     }
 
-    GSSEAP_MUTEX_LOCK(&cred->mutex);
+    /*
+     * Previously we acquired the credential mutex here, but it should not be
+     * necessary as the acceptor does not access any mutable elements of the
+     * credential handle.
+     */
 
-    if (cred->name != GSS_C_NO_NAME) {
-        major = gssEapDuplicateName(minor, cred->name, &ctx->acceptorName);
-        if (GSS_ERROR(major))
-            goto cleanup;
-    }
+    /*
+     * Calling gssEapInquireCred() forces the default acceptor credential name
+     * to be resolved.
+     */
+    major = gssEapInquireCred(minor, cred, &ctx->acceptorName, NULL, NULL, NULL);
+    if (GSS_ERROR(major))
+        goto cleanup;
 
     major = gssEapSmStep(minor,
                          cred,
@@ -966,16 +924,9 @@ gss_accept_sec_context(OM_uint32 *minor,
         }
     }
 
-    assert(CTX_IS_ESTABLISHED(ctx) || major == GSS_S_CONTINUE_NEEDED);
+    GSSEAP_ASSERT(CTX_IS_ESTABLISHED(ctx) || major == GSS_S_CONTINUE_NEEDED);
 
 cleanup:
-    if (cred != GSS_C_NO_CREDENTIAL)
-        GSSEAP_MUTEX_UNLOCK(&cred->mutex);
-    GSSEAP_MUTEX_UNLOCK(&ctx->mutex);
-
-    if (GSS_ERROR(major))
-        gssEapReleaseContext(&tmpMinor, context_handle);
-
     return major;
 }
 
@@ -1060,3 +1011,62 @@ eapGssSmAcceptGssReauth(OM_uint32 *minor,
     return major;
 }
 #endif /* GSSEAP_ENABLE_REAUTH */
+
+OM_uint32 GSSAPI_CALLCONV
+gss_accept_sec_context(OM_uint32 *minor,
+                       gss_ctx_id_t *context_handle,
+                       gss_cred_id_t cred,
+                       gss_buffer_t input_token,
+                       gss_channel_bindings_t input_chan_bindings,
+                       gss_name_t *src_name,
+                       gss_OID *mech_type,
+                       gss_buffer_t output_token,
+                       OM_uint32 *ret_flags,
+                       OM_uint32 *time_rec,
+                       gss_cred_id_t *delegated_cred_handle)
+{
+    OM_uint32 major, tmpMinor;
+    gss_ctx_id_t ctx = *context_handle;
+
+    *minor = 0;
+
+    output_token->length = 0;
+    output_token->value = NULL;
+
+    if (src_name != NULL)
+        *src_name = GSS_C_NO_NAME;
+
+    if (input_token == GSS_C_NO_BUFFER || input_token->length == 0) {
+        *minor = GSSEAP_TOK_TRUNC;
+        return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    if (ctx == GSS_C_NO_CONTEXT) {
+        major = gssEapAllocContext(minor, &ctx);
+        if (GSS_ERROR(major))
+            return major;
+
+        *context_handle = ctx;
+    }
+
+    GSSEAP_MUTEX_LOCK(&ctx->mutex);
+
+    major = gssEapAcceptSecContext(minor,
+                                   ctx,
+                                   cred,
+                                   input_token,
+                                   input_chan_bindings,
+                                   src_name,
+                                   mech_type,
+                                   output_token,
+                                   ret_flags,
+                                   time_rec,
+                                   delegated_cred_handle);
+
+    GSSEAP_MUTEX_UNLOCK(&ctx->mutex);
+
+    if (GSS_ERROR(major))
+        gssEapReleaseContext(&tmpMinor, context_handle);
+
+    return major;
+}

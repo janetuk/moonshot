@@ -81,7 +81,7 @@ gssEapAllocName(OM_uint32 *minor, gss_name_t *pName)
     }
 
     if (GSSEAP_MUTEX_INIT(&name->mutex) != 0) {
-        *minor = errno;
+        *minor = GSSEAP_GET_LAST_ERROR();
         gssEapReleaseName(&tmpMinor, &name);
         return GSS_S_FAILURE;
     }
@@ -112,8 +112,9 @@ gssEapReleaseName(OM_uint32 *minor, gss_name_t *pName)
     GSSEAP_KRB_INIT(&krbContext);
     krb5_free_principal(krbContext, name->krbPrincipal);
     gssEapReleaseOid(&tmpMinor, &name->mechanismUsed);
-
+#ifdef GSSEAP_ENABLE_ACCEPTOR
     gssEapReleaseAttrContext(&tmpMinor, name);
+#endif
 
     GSSEAP_MUTEX_DESTROY(&name->mutex);
     GSSEAP_FREE(name);
@@ -205,7 +206,7 @@ importServiceName(OM_uint32 *minor,
     }
 
     if (realm != NULL)
-        GSSEAP_FREE(realm);
+        krb5_free_default_realm(krbContext, realm);
     GSSEAP_FREE(service);
 
     return major;
@@ -264,14 +265,14 @@ importEapNameFlags(OM_uint32 *minor,
 
 #ifdef HAVE_HEIMDAL_VERSION
         if (code == 0 && KRB_PRINC_REALM(krbPrinc) == NULL) {
-            KRB_PRINC_REALM(krbPrinc) = GSSEAP_CALLOC(1, sizeof(char));
+            KRB_PRINC_REALM(krbPrinc) = KRB_CALLOC(1, sizeof(char));
             if (KRB_PRINC_REALM(krbPrinc) == NULL)
                 code = ENOMEM;
         }
 #endif
 
         if (defaultRealm != NULL)
-            GSSEAP_FREE(defaultRealm);
+            krb5_free_default_realm(krbContext, defaultRealm);
     }
 
     if (nameBuffer != GSS_C_NO_BUFFER)
@@ -282,7 +283,7 @@ importEapNameFlags(OM_uint32 *minor,
         return GSS_S_FAILURE;
     }
 
-    assert(krbPrinc != NULL);
+    GSSEAP_ASSERT(krbPrinc != NULL);
 
     major = krbPrincipalToName(minor, &krbPrinc, pName);
     if (GSS_ERROR(major))
@@ -426,6 +427,7 @@ gssEapImportNameInternal(OM_uint32 *minor,
     name->mechanismUsed = mechanismUsed;
     mechanismUsed = GSS_C_NO_OID;
 
+#ifdef GSSEAP_ENABLE_ACCEPTOR
     if (flags & EXPORT_NAME_FLAG_COMPOSITE) {
         gss_buffer_desc buf;
 
@@ -436,6 +438,7 @@ gssEapImportNameInternal(OM_uint32 *minor,
         if (GSS_ERROR(major))
             goto cleanup;
     }
+#endif
 
     major = GSS_S_COMPLETE;
     *minor = 0;
@@ -512,8 +515,8 @@ gssEapImportName(OM_uint32 *minor,
 
     if (major == GSS_S_COMPLETE &&
         mechType != GSS_C_NO_OID) {
-        assert(gssEapIsConcreteMechanismOid(mechType));
-        assert(name->mechanismUsed == GSS_C_NO_OID);
+        GSSEAP_ASSERT(gssEapIsConcreteMechanismOid(mechType));
+        GSSEAP_ASSERT(name->mechanismUsed == GSS_C_NO_OID);
 
         major = gssEapCanonicalizeOid(minor, mechType, 0, &name->mechanismUsed);
     }
@@ -565,12 +568,14 @@ gssEapExportNameInternal(OM_uint32 *minor,
         exportedNameLen += 6 + mech->length;
     }
     exportedNameLen += 4 + nameBuf.length;
+#ifdef GSSEAP_ENABLE_ACCEPTOR
     if (flags & EXPORT_NAME_FLAG_COMPOSITE) {
         major = gssEapExportAttrContext(minor, name, &attrs);
         if (GSS_ERROR(major))
             goto cleanup;
         exportedNameLen += attrs.length;
     }
+#endif
 
     exportedName->value = GSSEAP_MALLOC(exportedNameLen);
     if (exportedName->value == NULL) {
@@ -612,7 +617,7 @@ gssEapExportNameInternal(OM_uint32 *minor,
         p += attrs.length;
     }
 
-    assert(p == (unsigned char *)exportedName->value + exportedNameLen);
+    GSSEAP_ASSERT(p == (unsigned char *)exportedName->value + exportedNameLen);
 
     major = GSS_S_COMPLETE;
     *minor = 0;
@@ -670,11 +675,13 @@ gssEapCanonicalizeName(OM_uint32 *minor,
         goto cleanup;
     }
 
+#ifdef GSSEAP_ENABLE_ACCEPTOR
     if (input_name->attrCtx != NULL) {
         major = gssEapDuplicateAttrContext(minor, input_name, name);
         if (GSS_ERROR(major))
             goto cleanup;
     }
+#endif
 
     *dest_name = name;
 

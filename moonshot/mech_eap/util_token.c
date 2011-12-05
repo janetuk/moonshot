@@ -91,7 +91,7 @@ gssEapEncodeInnerTokens(OM_uint32 *minor,
     for (i = 0; i < tokens->buffers.count; i++) {
         gss_buffer_t tokenBuffer = &tokens->buffers.elements[i];
 
-        assert((tokens->types[i] & ITOK_FLAG_VERIFIED) == 0); /* private flag */
+        GSSEAP_ASSERT((tokens->types[i] & ITOK_FLAG_VERIFIED) == 0); /* private flag */
 
          /*
           * Extensions are encoded as type-length-value, where the upper
@@ -104,8 +104,8 @@ gssEapEncodeInnerTokens(OM_uint32 *minor,
         p += 8 + tokenBuffer->length;
     }
 
-    assert(p == (unsigned char *)buffer->value + required);
-    assert(buffer->value != NULL);
+    GSSEAP_ASSERT(p == (unsigned char *)buffer->value + required);
+    GSSEAP_ASSERT(buffer->value != NULL);
 
     major = GSS_S_COMPLETE;
     *minor = 0;
@@ -125,6 +125,7 @@ gssEapDecodeInnerTokens(OM_uint32 *minor,
 {
     OM_uint32 major, tmpMinor;
     unsigned char *p;
+    size_t count = 0;
     size_t remain;
 
     tokens->buffers.count = 0;
@@ -149,14 +150,37 @@ gssEapDecodeInnerTokens(OM_uint32 *minor,
             goto cleanup;
         }
 
-        ntypes = GSSEAP_REALLOC(tokens->types,
-                                (tokens->buffers.count + 1) * sizeof(OM_uint32));
-        if (ntypes == NULL) {
-            major = GSS_S_FAILURE;
-            *minor = ENOMEM;
-            goto cleanup;
+        if (tokens->buffers.count <= count) {
+            if (count == 0)
+                count = 1;
+            else
+                count *= 2;
+
+            ntypes = GSSEAP_MALLOC(count * sizeof(OM_uint32));
+            if (ntypes == NULL) {
+                major = GSS_S_FAILURE;
+                *minor = ENOMEM;
+                goto cleanup;
+            }
+            if (tokens->types != NULL) {
+                memcpy(ntypes, tokens->types, tokens->buffers.count * sizeof(OM_uint32));
+                GSSEAP_FREE(tokens->types);
+            }
+            tokens->types = ntypes;
+
+            newTokenBuffers = GSSEAP_MALLOC(count * sizeof(gss_buffer_desc));
+            if (newTokenBuffers == NULL) {
+                major = GSS_S_FAILURE;
+                *minor = ENOMEM;
+                goto cleanup;
+            }
+            if (tokens->buffers.elements != NULL) {
+                memcpy(newTokenBuffers, tokens->buffers.elements,
+                       tokens->buffers.count * sizeof(gss_buffer_desc));
+                GSSEAP_FREE(tokens->buffers.elements);
+            }
+            tokens->buffers.elements = newTokenBuffers;
         }
-        tokens->types = ntypes;
 
         tokens->types[tokens->buffers.count] = load_uint32_be(&p[0]);
         tokenBuffer.length = load_uint32_be(&p[4]);
@@ -168,21 +192,11 @@ gssEapDecodeInnerTokens(OM_uint32 *minor,
         }
         tokenBuffer.value = &p[8];
 
-        newTokenBuffers = GSSEAP_REALLOC(tokens->buffers.elements,
-                                         (tokens->buffers.count + 1) * sizeof(gss_buffer_desc));
-        if (newTokenBuffers == NULL) {
-            major = GSS_S_FAILURE;
-            *minor = ENOMEM;
-            goto cleanup;
-        }
-
-        tokens->buffers.elements = newTokenBuffers;
         tokens->buffers.elements[tokens->buffers.count] = tokenBuffer;
         tokens->buffers.count++;
 
         p      += 8 + tokenBuffer.length;
         remain -= 8 + tokenBuffer.length;
-
     } while (remain != 0);
 
     major = GSS_S_COMPLETE;
@@ -302,7 +316,7 @@ der_read_length(unsigned char **buf, ssize_t *bufsize)
 size_t
 tokenSize(const gss_OID_desc *mech, size_t body_size)
 {
-    assert(mech != GSS_C_NO_OID);
+    GSSEAP_ASSERT(mech != GSS_C_NO_OID);
 
     /* set body_size to sequence contents size */
     body_size += 4 + (size_t) mech->length;         /* NEED overflow check */
@@ -325,7 +339,7 @@ makeTokenHeader(
     *(*buf)++ = (unsigned char)mech->length;
     memcpy(*buf, mech->elements, mech->length);
     *buf += mech->length;
-    assert(tok_type != TOK_TYPE_NONE);
+    GSSEAP_ASSERT(tok_type != TOK_TYPE_NONE);
     *(*buf)++ = (unsigned char)((tok_type>>8) & 0xff);
     *(*buf)++ = (unsigned char)(tok_type & 0xff);
 }

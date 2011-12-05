@@ -61,11 +61,21 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_ 1
 
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
 #include <string.h>
 #include <errno.h>
 
 #include <krb5.h>
+
+#ifdef WIN32
+#define inline __inline
+#define snprintf _snprintf
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,8 +85,8 @@ extern "C" {
 #define MIN(_a,_b)  ((_a)<(_b)?(_a):(_b))
 #endif
 
-#if !(defined(__cplusplus)) || (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
-#define GSSEAP_UNUSED __attribute__ ((__unused__)) 
+#if !defined(WIN32) && !(defined(__cplusplus)) || (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
+#define GSSEAP_UNUSED __attribute__ ((__unused__))
 #else
 #define GSSEAP_UNUSED
 #endif
@@ -87,6 +97,13 @@ makeStringBuffer(OM_uint32 *minor,
                  const char *string,
                  gss_buffer_t buffer);
 
+#define makeStringBufferOrCleanup(src, dst)             \
+    do {                                                \
+        major = makeStringBuffer((minor), (src), (dst));\
+        if (GSS_ERROR(major))                           \
+            goto cleanup;                               \
+    } while (0)
+
 OM_uint32
 bufferToString(OM_uint32 *minor,
                const gss_buffer_t buffer,
@@ -96,6 +113,13 @@ OM_uint32
 duplicateBuffer(OM_uint32 *minor,
                 const gss_buffer_t src,
                 gss_buffer_t dst);
+
+#define duplicateBufferOrCleanup(src, dst)              \
+    do {                                                \
+        major = duplicateBuffer((minor), (src), (dst)); \
+        if (GSS_ERROR(major))                           \
+            goto cleanup;                               \
+    } while (0)
 
 static inline int
 bufferEqual(const gss_buffer_t b1, const gss_buffer_t b2)
@@ -186,7 +210,10 @@ enum gss_eap_token_type {
 
 #define ITOK_TYPE_MASK                  (~(ITOK_FLAG_CRITICAL | ITOK_FLAG_VERIFIED))
 
-#define GSSEAP_WIRE_FLAGS_MASK          GSS_C_MUTUAL_FLAG
+#define GSSEAP_WIRE_FLAGS_MASK          ( GSS_C_MUTUAL_FLAG             | \
+                                          GSS_C_DCE_STYLE               | \
+                                          GSS_C_IDENTIFY_FLAG           | \
+                                          GSS_C_EXTENDED_ERROR_FLAG       )
 
 OM_uint32 gssEapAllocContext(OM_uint32 *minor, gss_ctx_id_t *pCtx);
 OM_uint32 gssEapReleaseContext(OM_uint32 *minor, gss_ctx_id_t *pCtx);
@@ -224,16 +251,34 @@ gssEapVerifyTokenMIC(OM_uint32 *minor,
 OM_uint32 gssEapAllocCred(OM_uint32 *minor, gss_cred_id_t *pCred);
 OM_uint32 gssEapReleaseCred(OM_uint32 *minor, gss_cred_id_t *pCred);
 
+gss_OID
+gssEapPrimaryMechForCred(gss_cred_id_t cred);
+
 OM_uint32
 gssEapAcquireCred(OM_uint32 *minor,
                   const gss_name_t desiredName,
-                  const gss_buffer_t password,
                   OM_uint32 timeReq,
                   const gss_OID_set desiredMechs,
                   int cred_usage,
                   gss_cred_id_t *pCred,
                   gss_OID_set *pActualMechs,
                   OM_uint32 *timeRec);
+
+OM_uint32
+gssEapSetCredPassword(OM_uint32 *minor,
+                      gss_cred_id_t cred,
+                      const gss_buffer_t password);
+
+OM_uint32
+gssEapSetCredService(OM_uint32 *minor,
+                     gss_cred_id_t cred,
+                     const gss_name_t target);
+
+OM_uint32
+gssEapResolveInitiatorCred(OM_uint32 *minor,
+                           const gss_cred_id_t cred,
+                           const gss_name_t target,
+                           gss_cred_id_t *resolvedCred);
 
 int gssEapCredAvailable(gss_cred_id_t cred, gss_OID mech);
 
@@ -299,6 +344,21 @@ gssEapDeriveRfc3961Key(OM_uint32 *minor,
                        krb5_keyblock *pKey);
 
 /* util_krb.c */
+
+#ifndef KRB_MALLOC
+/*
+ * If your Kerberos library uses a different allocator to your
+ * GSS mechanism glue, then you might wish to define these in
+ * config.h or elsewhere. This should eventually go away when
+ * we no longer need to allocate memory that is freed by the
+ * Kerberos library.
+ */
+#define KRB_CALLOC                      calloc
+#define KRB_MALLOC                      malloc
+#define KRB_FREE                        free
+#define KRB_REALLOC                     realloc
+#endif /* KRB_MALLOC */
+
 #ifdef HAVE_HEIMDAL_VERSION
 
 #define KRB_TIME_FOREVER        ((time_t)~0L)
@@ -317,6 +377,8 @@ gssEapDeriveRfc3961Key(OM_uint32 *minor,
 
 #define KRB_CRYPTO_CONTEXT(ctx) (krbCrypto)
 
+#define KRB_DATA_INIT(d)        krb5_data_zero((d))
+
 #else
 
 #define KRB_TIME_FOREVER        KRB5_INT32_MAX
@@ -334,6 +396,12 @@ gssEapDeriveRfc3961Key(OM_uint32 *minor,
 #define KRB_KT_ENT_FREE(c, e)   krb5_free_keytab_entry_contents((c), (e))
 
 #define KRB_CRYPTO_CONTEXT(ctx) (&(ctx)->rfc3961Key)
+
+#define KRB_DATA_INIT(d)        do {        \
+        (d)->magic = KV5M_DATA;             \
+        (d)->length = 0;                    \
+        (d)->data = NULL;                   \
+    } while (0)
 
 #endif /* HAVE_HEIMDAL_VERSION */
 
@@ -471,6 +539,17 @@ gssEapOidToSaslName(const gss_OID oid);
 
 gss_OID
 gssEapSaslNameToOid(const gss_buffer_t name);
+
+/* util_moonshot.c */
+OM_uint32
+libMoonshotResolveDefaultIdentity(OM_uint32 *minor,
+                                  const gss_cred_id_t cred,
+                                  gss_name_t *pName);
+
+OM_uint32
+libMoonshotResolveInitiatorCred(OM_uint32 *minor,
+                                gss_cred_id_t cred,
+                                const gss_name_t targetName);
 
 /* util_name.c */
 #define EXPORT_NAME_FLAG_OID                    0x1
@@ -696,22 +775,63 @@ verifyTokenHeader(OM_uint32 *minor,
 
 /* Helper macros */
 
+#ifndef GSSEAP_MALLOC
 #define GSSEAP_CALLOC                   calloc
 #define GSSEAP_MALLOC                   malloc
 #define GSSEAP_FREE                     free
 #define GSSEAP_REALLOC                  realloc
+#endif
+
+#ifndef GSSAPI_CALLCONV
+#define GSSAPI_CALLCONV                 KRB5_CALLCONV
+#endif
+
+#ifndef GSSEAP_ASSERT
+#include <assert.h>
+#define GSSEAP_ASSERT(x)                assert((x))
+#endif /* !GSSEAP_ASSERT */
+
+#ifdef WIN32
+#define GSSEAP_CONSTRUCTOR
+#define GSSEAP_DESTRUCTOR
+#else
+#define GSSEAP_CONSTRUCTOR              __attribute__((constructor))
+#define GSSEAP_DESTRUCTOR               __attribute__((destructor))
+#endif
 
 #define GSSEAP_NOT_IMPLEMENTED          do {            \
-        assert(0 && "not implemented");                 \
+        GSSEAP_ASSERT(0 && "not implemented");          \
         *minor = ENOSYS;                                \
         return GSS_S_FAILURE;                           \
     } while (0)
 
+#ifdef WIN32
+
+#include <winbase.h>
+
+#define GSSEAP_GET_LAST_ERROR()         (GetLastError()) /* XXX FIXME */
+
+#define GSSEAP_MUTEX                    CRITICAL_SECTION
+#define GSSEAP_MUTEX_INIT(m)            (InitializeCriticalSection((m)), 0)
+#define GSSEAP_MUTEX_DESTROY(m)         DeleteCriticalSection((m))
+#define GSSEAP_MUTEX_LOCK(m)            EnterCriticalSection((m))
+#define GSSEAP_MUTEX_UNLOCK(m)          LeaveCriticalSection((m))
+#define GSSEAP_ONCE_LEAVE		do { return TRUE; } while (0)
+
+/* Thread-local is handled separately */
+
+#define GSSEAP_THREAD_ONCE              INIT_ONCE
+#define GSSEAP_ONCE_CALLBACK(cb)        BOOL CALLBACK cb(PINIT_ONCE InitOnce, PVOID Parameter, PVOID *Context)
+#define GSSEAP_ONCE(o, i)               InitOnceExecuteOnce((o), (i), NULL, NULL)
+#define GSSEAP_ONCE_INITIALIZER         INIT_ONCE_STATIC_INIT
+
+#else
+
 #include <pthread.h>
 
-#define GSSEAP_MUTEX                    pthread_mutex_t
-#define GSSEAP_MUTEX_INITIALIZER        PTHREAD_MUTEX_INITIALIZER
+#define GSSEAP_GET_LAST_ERROR()         (errno)
 
+#define GSSEAP_MUTEX                    pthread_mutex_t
 #define GSSEAP_MUTEX_INIT(m)            pthread_mutex_init((m), NULL)
 #define GSSEAP_MUTEX_DESTROY(m)         pthread_mutex_destroy((m))
 #define GSSEAP_MUTEX_LOCK(m)            pthread_mutex_lock((m))
@@ -723,8 +843,12 @@ verifyTokenHeader(OM_uint32 *minor,
 #define GSSEAP_SETSPECIFIC(k, d)        pthread_setspecific((k), (d))
 
 #define GSSEAP_THREAD_ONCE              pthread_once_t
+#define GSSEAP_ONCE_CALLBACK(cb)        void cb(void)
 #define GSSEAP_ONCE(o, i)               pthread_once((o), (i))
 #define GSSEAP_ONCE_INITIALIZER         PTHREAD_ONCE_INIT
+#define GSSEAP_ONCE_LEAVE		do { } while (0)
+
+#endif /* WIN32 */
 
 /* Helper functions */
 static inline void
@@ -875,13 +999,32 @@ gssBufferToKrbData(gss_buffer_t buffer, krb5_data *data)
     data->length = buffer->length;
 }
 
+/* util_tld.c */
+struct gss_eap_status_info;
+
+struct gss_eap_thread_local_data {
+    krb5_context krbContext;
+    struct gss_eap_status_info *statusInfo;
+};
+
+struct gss_eap_thread_local_data *
+gssEapGetThreadLocalData(void);
+
+void
+gssEapDestroyStatusInfo(struct gss_eap_status_info *status);
+
+void
+gssEapDestroyKrbContext(krb5_context context);
+
 #ifdef __cplusplus
 }
 #endif
 
+#ifdef GSSEAP_ENABLE_ACCEPTOR
 #include "util_json.h"
 #include "util_attr.h"
 #include "util_base64.h"
+#endif /* GSSEAP_ENABLE_ACCEPTOR */
 #ifdef GSSEAP_ENABLE_REAUTH
 #include "util_reauth.h"
 #endif

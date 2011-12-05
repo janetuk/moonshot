@@ -36,31 +36,22 @@
 
 #include "gssapiP_eap.h"
 
-static GSSEAP_THREAD_ONCE gssEapStatusInfoKeyOnce = GSSEAP_ONCE_INITIALIZER;
-static GSSEAP_THREAD_KEY gssEapStatusInfoKey;
-
 struct gss_eap_status_info {
     OM_uint32 code;
     char *message;
     struct gss_eap_status_info *next;
 };
 
-static void
-destroyStatusInfo(void *arg)
+void
+gssEapDestroyStatusInfo(struct gss_eap_status_info *p)
 {
-    struct gss_eap_status_info *p = arg, *next;
+    struct gss_eap_status_info *next;
 
-    for (p = arg; p != NULL; p = next) {
+    for (; p != NULL; p = next) {
         next = p->next;
         GSSEAP_FREE(p->message);
         GSSEAP_FREE(p);
     }
-}
-
-static void
-createStatusInfoKey(void)
-{
-    GSSEAP_KEY_CREATE(&gssEapStatusInfoKey, destroyStatusInfo);
 }
 
 /*
@@ -73,23 +64,23 @@ createStatusInfoKey(void)
 static void
 saveStatusInfoNoCopy(OM_uint32 minor, char *message)
 {
-    struct gss_eap_status_info **next = NULL, *p;
+    struct gss_eap_status_info **next = NULL, *p = NULL;
+    struct gss_eap_thread_local_data *tld = gssEapGetThreadLocalData();
 
-    GSSEAP_ONCE(&gssEapStatusInfoKeyOnce, createStatusInfoKey);
-
-    p = GSSEAP_GETSPECIFIC(gssEapStatusInfoKey);
-    for (; p != NULL; p = p->next) {
-        if (p->code == minor) {
-            /* Set message in-place */
-            if (p->message != NULL)
-                GSSEAP_FREE(p->message);
-            p->message = message;
-            return;
+    if (tld != NULL) {
+        for (p = tld->statusInfo; p != NULL; p = p->next) {
+            if (p->code == minor) {
+                /* Set message in-place */
+                if (p->message != NULL)
+                    GSSEAP_FREE(p->message);
+                p->message = message;
+                return;
+            }
+            next = &p->next;
         }
-        next = &p->next;
+        p = GSSEAP_CALLOC(1, sizeof(*p));
     }
 
-    p = GSSEAP_CALLOC(1, sizeof(*p));
     if (p == NULL) {
         if (message != NULL)
             GSSEAP_FREE(message);
@@ -102,29 +93,43 @@ saveStatusInfoNoCopy(OM_uint32 minor, char *message)
     if (next != NULL)
         *next = p;
     else
-        GSSEAP_SETSPECIFIC(gssEapStatusInfoKey, p);
+        tld->statusInfo = p;
 }
 
 static const char *
 getStatusInfo(OM_uint32 minor)
 {
     struct gss_eap_status_info *p;
+    struct gss_eap_thread_local_data *tld = gssEapGetThreadLocalData();
 
-    GSSEAP_ONCE(&gssEapStatusInfoKeyOnce, createStatusInfoKey);
-
-    for (p = GSSEAP_GETSPECIFIC(gssEapStatusInfoKey);
-         p != NULL;
-         p = p->next) {
-        if (p->code == minor)
-            return p->message;
+    if (tld != NULL) {
+        for (p = tld->statusInfo; p != NULL; p = p->next) {
+            if (p->code == minor)
+                return p->message;
+        }
     }
-
     return NULL;
 }
 
 void
 gssEapSaveStatusInfo(OM_uint32 minor, const char *format, ...)
 {
+#ifdef WIN32
+    OM_uint32 tmpMajor, tmpMinor;
+    char buf[BUFSIZ];
+    gss_buffer_desc s = GSS_C_EMPTY_BUFFER;
+    va_list ap;
+
+    if (format != NULL) {
+        va_start(ap, format);
+        snprintf(buf, sizeof(buf), format, ap);
+        va_end(ap);
+    }
+
+    tmpMajor = makeStringBuffer(&tmpMinor, buf, &s);
+    if (!GSS_ERROR(tmpMajor))
+        saveStatusInfoNoCopy(minor, (char *)s.value);
+#else
     char *s = NULL;
     int n;
     va_list ap;
@@ -132,21 +137,21 @@ gssEapSaveStatusInfo(OM_uint32 minor, const char *format, ...)
     if (format != NULL) {
         va_start(ap, format);
         n = vasprintf(&s, format, ap);
+        if (n == -1)
+            s = NULL;
         va_end(ap);
 	if (n == -1)
 	  s = NULL;
     }
 
     saveStatusInfoNoCopy(minor, s);
+#endif /* WIN32 */
 }
 
 OM_uint32
-gss_display_status(OM_uint32 *minor,
-                   OM_uint32 status_value,
-                   int status_type,
-                   gss_OID mech_type,
-                   OM_uint32 *message_context,
-                   gss_buffer_t status_string)
+gssEapDisplayStatus(OM_uint32 *minor,
+                    OM_uint32 status_value,
+                    gss_buffer_t status_string)
 {
     OM_uint32 major;
     krb5_context krbContext = NULL;
@@ -154,18 +159,6 @@ gss_display_status(OM_uint32 *minor,
 
     status_string->length = 0;
     status_string->value = NULL;
-
-    if (!gssEapIsMechanismOid(mech_type)) {
-        *minor = GSSEAP_WRONG_MECH;
-        return GSS_S_BAD_MECH;
-    }
-
-    if (status_type != GSS_C_MECH_CODE ||
-        *message_context != 0) {
-        /* we rely on the mechglue for GSS_C_GSS_CODE */
-        *minor = 0;
-        return GSS_S_BAD_STATUS;
-    }
 
     errMsg = getStatusInfo(status_value);
     if (errMsg == NULL) {
@@ -186,4 +179,27 @@ gss_display_status(OM_uint32 *minor,
         krb5_free_error_message(krbContext, errMsg);
 
     return major;
+}
+
+OM_uint32 GSSAPI_CALLCONV
+gss_display_status(OM_uint32 *minor,
+                   OM_uint32 status_value,
+                   int status_type,
+                   gss_OID mech_type,
+                   OM_uint32 *message_context,
+                   gss_buffer_t status_string)
+{
+    if (!gssEapIsMechanismOid(mech_type)) {
+        *minor = GSSEAP_WRONG_MECH;
+        return GSS_S_BAD_MECH;
+    }
+
+    if (status_type != GSS_C_MECH_CODE ||
+        *message_context != 0) {
+        /* we rely on the mechglue for GSS_C_GSS_CODE */
+        *minor = 0;
+        return GSS_S_BAD_STATUS;
+    }
+
+    return gssEapDisplayStatus(minor, status_value, status_string);
 }

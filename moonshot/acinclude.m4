@@ -1,5 +1,13 @@
 dnl Based on the one from the Boinc project by Reinhard
 
+AC_DEFUN([AX_CHECK_WINDOWS],
+[AC_MSG_CHECKING(for windows)
+target_windows="no"
+AC_CHECK_HEADER(windows.h,[target_windows="yes"],[target_windows="no"])
+AC_MSG_RESULT($target_windows)
+AM_CONDITIONAL(TARGET_WINDOWS,test "x$target_windows" = "xyes")
+])dnl
+
 AC_DEFUN([AX_CHECK_KRB5],
 [AC_MSG_CHECKING(for GSS-API and Kerberos implementation)
 KRB5_DIR=
@@ -9,18 +17,28 @@ AC_ARG_WITH(krb5,
        [Use krb5 (in specified installation directory)]),
     [check_krb5_dir="$withval"],
     [check_krb5_dir=])
-for dir in $check_krb5_dir $prefix /usr /usr/local ; do
+for dir in $check_krb5_dir $prefix /usr/local /usr ; do
    krb5dir="$dir"
    if test -x "$dir/bin/krb5-config"; then
      found_krb5="yes";
-     KRB5_CFLAGS=`$dir/bin/krb5-config gssapi --cflags`;
-     KRB5_LIBS=`$dir/bin/krb5-config gssapi --libs`;
-     COMPILE_ET="$dir/bin/compile_et";
+     if test "x$target_windows" = "xyes"; then
+        KRB5_CFLAGS=-I"$check_krb5_dir/include";
+        KRB5_LDFLAGS="-L$check_krb5_dir/lib/";
+        KRB5_LIBS="-lkrb5_32 -lgssapi32";
+        COMPILE_ET="$check_krb5_dir/bin/compile_et";
+	AC_MSG_RESULT([yes])
+     else
+        KRB5_CFLAGS=`$dir/bin/krb5-config gssapi --cflags`;
+        KRB5_LDFLAGS="-L$dir/lib";
+        KRB5_LIBS=`$dir/bin/krb5-config gssapi --libs`
+AC_MSG_RESULT([yes])
+        AC_PATH_PROG(COMPILE_ET, [compile_et], [compile_et], [$dir/bin$PATH_SEPARATOr])
+     fi
      break;
    fi
 done
-AC_MSG_RESULT($found_krb5)
 if test x_$found_krb5 != x_yes; then
+   AC_MSG_RESULT($found_krb5)
    AC_MSG_ERROR([
 ----------------------------------------------------------------------
   Cannot find GSS-API/Kerberos libraries.
@@ -32,6 +50,7 @@ if test x_$found_krb5 != x_yes; then
 else
 	printf "Kerberos found in $krb5dir\n";
 	AC_SUBST(KRB5_CFLAGS)
+        AC_SUBST(KRB5_LDFLAGS)
 	AC_SUBST(KRB5_LIBS)
 	AC_SUBST(COMPILE_ET)
 	AC_CHECK_LIB(krb5, GSS_C_NT_COMPOSITE_EXPORT, [AC_DEFINE_UNQUOTED([HAVE_GSS_C_NT_COMPOSITE_EXPORT], 1, [Define if GSS-API library supports recent naming extensions draft])], [], "$KRB5_LIBS")
@@ -129,7 +148,7 @@ AC_MSG_RESULT($found_shibsp)
 if test x_$found_shibsp != x_yes; then
    AC_MSG_ERROR([
 ----------------------------------------------------------------------
-  Cannot find Shibboleth/OpenSAML libraries.
+  Cannot find Shibboleth libraries.
 
   Please install Shibboleth or specify installation directory with
   --with-shibsp=(dir).
@@ -137,11 +156,12 @@ if test x_$found_shibsp != x_yes; then
 ])
 else
 	printf "Shibboleth found in $shibspdir\n";
-	SHIBSP_LIBS="-lshibsp  -lsaml -lxml-security-c -lxmltooling -lxerces-c";
+	SHIBSP_LIBS="-lshibsp -lsaml -lxml-security-c -lxmltooling -lxerces-c";
 	SHIBSP_LDFLAGS="-L$shibspdir/lib";
 	AC_SUBST(SHIBSP_CXXFLAGS)
 	AC_SUBST(SHIBSP_LDFLAGS)
 	AC_SUBST(SHIBSP_LIBS)
+	AC_DEFINE_UNQUOTED([HAVE_SHIBSP], 1, [Define is Shibboleth SP is available])
 fi
 ])dnl
 
@@ -154,6 +174,7 @@ AC_ARG_WITH(shibresolver,
        [Use Shibboleth resolver (in specified installation directory)]),
     [check_shibresolver_dir="$withval"],
     [check_shibresolver_dir=])
+if test x_$check_shibresolver_dir != x_no; then
 for dir in $check_shibresolver_dir $prefix /usr /usr/local ; do
    shibresolverdir="$dir"
    if test -f "$dir/include/shibresolver/resolver.h"; then
@@ -163,11 +184,14 @@ for dir in $check_shibresolver_dir $prefix /usr /usr/local ; do
      break;
    fi
 done
+fi
 AC_MSG_RESULT($found_shibresolver)
+if test x_$check_shibresolver_dir != x_no; then
 if test x_$found_shibresolver != x_yes; then
-   AC_MSG_ERROR([
+   AC_MSG_WARN([
 ----------------------------------------------------------------------
-  Cannot find Shibboleth resolver libraries.
+  Cannot find Shibboleth resolver libraries, building without
+  Shibboleth support.
 
   Please install Shibboleth or specify installation directory with
   --with-shibresolver=(dir).
@@ -180,6 +204,51 @@ else
 	AC_SUBST(SHIBRESOLVER_CXXFLAGS)
 	AC_SUBST(SHIBRESOLVER_LDFLAGS)
 	AC_SUBST(SHIBRESOLVER_LIBS)
+	AC_DEFINE_UNQUOTED([HAVE_SHIBRESOLVER], 1, [Define is Shibboleth resolver is available])
+fi
+fi
+])dnl
+
+AC_DEFUN([AX_CHECK_OPENSAML],
+[AC_MSG_CHECKING(for OpenSAML implementation)
+OPENSAML_DIR=
+found_opensaml="no"
+AC_ARG_WITH(opensaml,
+    AC_HELP_STRING([--with-opensaml],
+       [Use OpenSAML (in specified installation directory)]),
+    [check_opensaml_dir="$withval"],
+    [check_opensaml_dir=])
+if test x_$check_opensaml_dir != x_no; then
+for dir in $check_opensaml_dir $prefix /usr /usr/local ; do
+   opensamldir="$dir"
+   if test -f "$dir/include/saml/Assertion.h"; then
+     found_opensaml="yes";
+     OPENSAML_DIR="${opensamldir}"
+     OPENSAML_CXXFLAGS="-I$opensamldir/include";
+     break;
+   fi
+done
+fi
+AC_MSG_RESULT($found_opensaml)
+if test x_$check_opensaml_dir != x_no; then
+if test x_$found_opensaml != x_yes; then
+   AC_MSG_WARN([
+----------------------------------------------------------------------
+  Cannot find OpenSAML libraries, building without OpenSAML support.
+
+  Please install OpenSAML or specify installation directory with
+  --with-opensaml=(dir).
+----------------------------------------------------------------------
+])
+else
+	printf "OpenSAML found in $opensamldir\n";
+	OPENSAML_LIBS="-lsaml -lxml-security-c -lxmltooling -lxerces-c";
+	OPENSAML_LDFLAGS="-L$opensamldir/lib";
+	AC_SUBST(OPENSAML_CXXFLAGS)
+	AC_SUBST(OPENSAML_LDFLAGS)
+	AC_SUBST(OPENSAML_LIBS)
+	AC_DEFINE_UNQUOTED([HAVE_OPENSAML], 1, [Define is OpenSAML is available])
+fi
 fi
 ])dnl
 
@@ -258,3 +327,38 @@ else
 	AC_SUBST(JANSSON_LIBS)
 fi
 ])dnl
+
+AC_DEFUN([AX_CHECK_LIBMOONSHOT],
+[AC_MSG_CHECKING(for Moonshot identity selector implementation)
+LIBMOONSHOT_DIR=
+LIBMOONSHOT_CFLAGS=
+LIBMOONSHOT_LDFLAGS=
+LIBMOONSHOT_LIBS=
+found_libmoonshot="no"
+AC_ARG_WITH(libmoonshot,
+    AC_HELP_STRING([--with-libmoonshot],
+       [Use libmoonshot (in specified installation directory)]),
+    [check_libmoonshot_dir="$withval"],
+    [check_libmoonshot_dir=])
+for dir in $check_libmoonshot_dir $prefix /usr /usr/local ; do
+   libmoonshotdir="$dir"
+   if test -f "$dir/include/libmoonshot.h"; then
+     found_libmoonshot="yes";
+     LIBMOONSHOT_DIR="${libmoonshotdir}"
+     LIBMOONSHOT_CFLAGS="-I$libmoonshotdir/include";
+     break;
+   fi
+done
+AC_MSG_RESULT($found_libmoonshot)
+if test x_$found_libmoonshot = x_yes; then
+    printf "libmoonshot found in $libmoonshotdir\n";
+    LIBMOONSHOT_LIBS="-lmoonshot";
+    LIBMOONSHOT_LDFLAGS="-L$libmoonshot/lib";
+    AC_CHECK_LIB(moonshot, moonshot_get_identity, [AC_DEFINE_UNQUOTED([HAVE_MOONSHOT_GET_IDENTITY], 1, [Define if Moonshot identity selector is available])], [], "$LIBMOONSHOT_LIBS")
+fi
+    AC_SUBST(LIBMOONSHOT_CFLAGS)
+    AC_SUBST(LIBMOONSHOT_LDFLAGS)
+    AC_SUBST(LIBMOONSHOT_LIBS)
+    AM_CONDITIONAL(LIBMOONSHOT, test "x$found_libmoonshot" != "xno")
+])dnl
+

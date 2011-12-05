@@ -41,7 +41,7 @@
  * apart from the mechanism glue layer. However, Heimdal does call into the
  * mechanism here.
  */
-OM_uint32
+OM_uint32 GSSAPI_CALLCONV
 gss_add_cred(OM_uint32 *minor,
              gss_cred_id_t input_cred_handle GSSEAP_UNUSED,
              gss_name_t desired_name,
@@ -71,7 +71,6 @@ gss_add_cred(OM_uint32 *minor,
 
     major = gssEapAcquireCred(minor,
                               desired_name,
-                              GSS_C_NO_BUFFER,
                               time_req,
                               &mechs,
                               cred_usage,

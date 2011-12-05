@@ -36,7 +36,7 @@
 
 #include "gssapiP_eap.h"
 
-OM_uint32
+OM_uint32 GSSAPI_CALLCONV
 gss_delete_sec_context(OM_uint32 *minor,
                        gss_ctx_id_t *context_handle,
                        gss_buffer_t output_token)
@@ -67,7 +67,7 @@ gss_delete_sec_context(OM_uint32 *minor,
         iov[1].buffer.value = NULL;
         iov[1].buffer.length = 0;
 
-        major = gssEapWrapOrGetMIC(minor, ctx, FALSE, FALSE,
+        major = gssEapWrapOrGetMIC(minor, ctx, FALSE, NULL,
                                    iov, 2, TOK_TYPE_DELETE_CONTEXT);
         if (GSS_ERROR(major)) {
             GSSEAP_MUTEX_UNLOCK(&ctx->mutex);

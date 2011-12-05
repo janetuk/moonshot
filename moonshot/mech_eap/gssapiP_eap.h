@@ -42,11 +42,26 @@
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+#ifdef HAVE_STDARG_H
 #include <stdarg.h>
+#endif
 #include <time.h>
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+
+#ifdef WIN32
+#ifndef MAXHOSTNAMELEN
+# include <WinSock2.h>
+# define MAXHOSTNAMELEN NI_MAXHOST
+#endif
+#endif
 
 /* GSS headers */
 #include <gssapi/gssapi.h>
@@ -66,6 +81,7 @@ typedef const gss_OID_desc *gss_const_OID;
 #include <krb5.h>
 
 /* EAP headers */
+#include <includes.h>
 #include <common.h>
 #include <eap_peer/eap.h>
 #include <eap_peer/eap_config.h>
@@ -73,19 +89,29 @@ typedef const gss_OID_desc *gss_const_OID;
 #include <eap_common/eap_common.h>
 #include <wpabuf.h>
 
+#ifdef GSSEAP_ENABLE_ACCEPTOR
 /* FreeRADIUS headers */
 #ifdef __cplusplus
 extern "C" {
+#ifndef WIN32
 #define operator fr_operator
+#endif
 #endif
 #include <freeradius/libradius.h>
 #include <freeradius/radius.h>
+
+#undef pid_t
+
+/* libradsec headers */
 #include <radsec/radsec.h>
 #include <radsec/request.h>
 #ifdef __cplusplus
+#ifndef WIN32
 #undef operator
+#endif
 }
 #endif
+#endif /* GSSEAP_ENABLE_ACCEPTOR */
 
 #include "gsseap_err.h"
 #include "radsec_err.h"
@@ -113,14 +139,17 @@ struct gss_name_struct
     OM_uint32 flags;
     gss_OID mechanismUsed; /* this is immutable */
     krb5_principal krbPrincipal; /* this is immutable */
+#ifdef GSSEAP_ENABLE_ACCEPTOR
     struct gss_eap_attr_ctx *attrCtx;
+#endif
 };
 
 #define CRED_FLAG_INITIATE                  0x00010000
 #define CRED_FLAG_ACCEPT                    0x00020000
-#define CRED_FLAG_DEFAULT_IDENTITY          0x00040000
-#define CRED_FLAG_PASSWORD                  0x00080000
-#define CRED_FLAG_DEFAULT_CCACHE            0x00100000
+#define CRED_FLAG_PASSWORD                  0x00040000
+#define CRED_FLAG_DEFAULT_CCACHE            0x00080000
+#define CRED_FLAG_RESOLVED                  0x00100000
+#define CRED_FLAG_TARGET                    0x00200000
 #define CRED_FLAG_PUBLIC_MASK               0x0000FFFF
 
 #ifdef HAVE_HEIMDAL_VERSION
@@ -132,11 +161,15 @@ struct gss_cred_id_struct
     GSSEAP_MUTEX mutex;
     OM_uint32 flags;
     gss_name_t name;
+    gss_name_t target; /* for initiator */
     gss_buffer_desc password;
     gss_OID_set mechanisms;
     time_t expiryTime;
-    char *radiusConfigFile;
-    char *radiusConfigStanza;
+    gss_buffer_desc radiusConfigFile;
+    gss_buffer_desc radiusConfigStanza;
+    gss_buffer_desc caCertificate;
+    gss_buffer_desc subjectNameConstraint;
+    gss_buffer_desc subjectAltNameConstraint;
 #ifdef GSSEAP_ENABLE_REAUTH
     krb5_ccache krbCredCache;
     gss_cred_id_t reauthCred;
@@ -169,6 +202,7 @@ struct gss_eap_initiator_ctx {
     struct wpabuf reqData;
 };
 
+#ifdef GSSEAP_ENABLE_ACCEPTOR
 struct gss_eap_acceptor_ctx {
     struct rs_context *radContext;
     struct rs_connection *radConn;
@@ -176,6 +210,7 @@ struct gss_eap_acceptor_ctx {
     gss_buffer_desc state;
     VALUE_PAIR *vps;
 };
+#endif
 
 #ifdef HAVE_HEIMDAL_VERSION
 struct gss_ctx_id_t_desc_struct
@@ -196,12 +231,14 @@ struct gss_ctx_id_struct
     time_t expiryTime;
     uint64_t sendSeq, recvSeq;
     void *seqState;
-    gss_cred_id_t defaultCred;
+    gss_cred_id_t cred;
     union {
         struct gss_eap_initiator_ctx initiator;
         #define initiatorCtx         ctxU.initiator
+#ifdef GSSEAP_ENABLE_ACCEPTOR
         struct gss_eap_acceptor_ctx  acceptor;
         #define acceptorCtx          ctxU.acceptor
+#endif
 #ifdef GSSEAP_ENABLE_REAUTH
         gss_ctx_id_t                 reauth;
         #define reauthCtx            ctxU.reauth
@@ -219,6 +256,36 @@ struct gss_ctx_id_struct
 #define KEY_USAGE_ACCEPTOR_SIGN             23
 #define KEY_USAGE_INITIATOR_SEAL            24
 #define KEY_USAGE_INITIATOR_SIGN            25
+
+/* accept_sec_context.c */
+OM_uint32
+gssEapAcceptSecContext(OM_uint32 *minor,
+                       gss_ctx_id_t ctx,
+                       gss_cred_id_t cred,
+                       gss_buffer_t input_token,
+                       gss_channel_bindings_t input_chan_bindings,
+                       gss_name_t *src_name,
+                       gss_OID *mech_type,
+                       gss_buffer_t output_token,
+                       OM_uint32 *ret_flags,
+                       OM_uint32 *time_rec,
+                       gss_cred_id_t *delegated_cred_handle);
+
+/* init_sec_context.c */
+OM_uint32
+gssEapInitSecContext(OM_uint32 *minor,
+                     gss_cred_id_t cred,
+                     gss_ctx_id_t ctx,
+                     gss_name_t target_name,
+                     gss_OID mech_type,
+                     OM_uint32 req_flags,
+                     OM_uint32 time_req,
+                     gss_channel_bindings_t input_chan_bindings,
+                     gss_buffer_t input_token,
+                     gss_OID *actual_mech_type,
+                     gss_buffer_t output_token,
+                     OM_uint32 *ret_flags,
+                     OM_uint32 *time_rec);
 
 /* wrap_iov.c */
 OM_uint32
@@ -263,8 +330,27 @@ rfc4121Flags(gss_ctx_id_t ctx, int receiving);
 void
 gssEapSaveStatusInfo(OM_uint32 minor, const char *format, ...);
 
+OM_uint32
+gssEapDisplayStatus(OM_uint32 *minor,
+                    OM_uint32 status_value,
+                    gss_buffer_t status_string);
+
 #define IS_WIRE_ERROR(err)              ((err) > GSSEAP_RESERVED && \
                                          (err) <= GSSEAP_RADIUS_PROT_FAILURE)
+
+/* upper bound of RADIUS error range must be kept in sync with radsec.h */
+#define IS_RADIUS_ERROR(err)            ((err) >= ERROR_TABLE_BASE_rse && \
+                                         (err) <= ERROR_TABLE_BASE_rse + 20)
+
+/* exchange_meta_data.c */
+OM_uint32 GSSAPI_CALLCONV
+gssEapExchangeMetaData(OM_uint32 *minor,
+                       gss_const_OID mech,
+                       gss_cred_id_t cred,
+                       gss_ctx_id_t *ctx,
+                       const gss_name_t name,
+                       OM_uint32 req_flags,
+                       gss_const_buffer_t meta_data);
 
 /* export_sec_context.c */
 OM_uint32
@@ -272,6 +358,50 @@ gssEapExportSecContext(OM_uint32 *minor,
                        gss_ctx_id_t ctx,
                        gss_buffer_t token);
 
+/* import_sec_context.c */
+OM_uint32
+gssEapImportContext(OM_uint32 *minor,
+                    gss_buffer_t token,
+                    gss_ctx_id_t ctx);
+
+/* inquire_sec_context_by_oid.c */
+#define NEGOEX_INITIATOR_SALT      "gss-eap-negoex-initiator"
+#define NEGOEX_INITIATOR_SALT_LEN  (sizeof(NEGOEX_INITIATOR_SALT) - 1)
+
+#define NEGOEX_ACCEPTOR_SALT       "gss-eap-negoex-acceptor"
+#define NEGOEX_ACCEPTOR_SALT_LEN   (sizeof(NEGOEX_ACCEPTOR_SALT) - 1)
+
+/* pseudo_random.c */
+OM_uint32
+gssEapPseudoRandom(OM_uint32 *minor,
+                   gss_ctx_id_t ctx,
+                   int prf_key,
+                   const gss_buffer_t prf_in,
+                   ssize_t desired_output_len,
+                   gss_buffer_t prf_out);
+
+/* query_mechanism_info.c */
+OM_uint32
+gssQueryMechanismInfo(OM_uint32 *minor,
+                      gss_const_OID mech_oid,
+                      unsigned char auth_scheme[16]);
+
+/* query_meta_data.c */
+OM_uint32
+gssEapQueryMetaData(OM_uint32 *minor,
+                    gss_const_OID mech GSSEAP_UNUSED,
+                    gss_cred_id_t cred,
+                    gss_ctx_id_t *context_handle,
+                    const gss_name_t name,
+                    OM_uint32 req_flags GSSEAP_UNUSED,
+                    gss_buffer_t meta_data);
+
+/* eap_mech.c */
+OM_uint32
+gssEapInitiatorInit(OM_uint32 *minor);
+
+void
+gssEapFinalize(void);
 
 #ifdef __cplusplus
 }
