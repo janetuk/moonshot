@@ -1,3 +1,10 @@
+moonshot-gss-eap (0.1+20111207-1) unstable; urgency=low
+
+  * New upstream version
+  * Install multiarch krb5 plugin
+
+ -- Sam Hartman <hartmans@debian.org>  Wed, 07 Dec 2011 12:03:43 -0500
+
 moonshot-gss-eap (0.1+20110809-1) unstable; urgency=low
 
   * New upstream version
