@@ -35,13 +35,39 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@GSSEAP_ENABLE_REAUTH_TRUE@am__append_1 = util_reauth.c
+@TARGET_WINDOWS_TRUE@am__append_1 = -DCONFIG_WIN32_DEFAULTS -DUSE_INTERNAL_CRYPTO
+@TARGET_WINDOWS_FALSE@am__append_2 = -DEAP_TLS -DEAP_PEAP -DEAP_TTLS -DEAP_MD5 -DEAP_MSCHAPv2 -DEAP_GTC -DEAP_OTP -DEAP_LEAP -DEAP_PSK -DEAP_PAX -DEAP_SAKE -DEAP_GPSK -DEAP_GPSK_SHA256 -DEAP_SERVER_IDENTITY -DEAP_SERVER_TLS -DEAP_SERVER_PEAP -DEAP_SERVER_TTLS -DEAP_SERVER_MD5 -DEAP_SERVER_MSCHAPV2 -DEAP_SERVER_GTC -DEAP_SERVER_PSK -DEAP_SERVER_PAX -DEAP_SERVER_SAKE -DEAP_SERVER_GPSK -DEAP_SERVER_GPSK_SHA256 -DIEEE8021X_EAPOL
+@TARGET_WINDOWS_TRUE@am__append_3 = -debug
+@LIBMOONSHOT_TRUE@am__append_4 = util_moonshot.c
+@LIBMOONSHOT_TRUE@am__append_5 = @LIBMOONSHOT_CFLAGS@
+@LIBMOONSHOT_TRUE@am__append_6 = @LIBMOONSHOT_LDFLAGS@
+@LIBMOONSHOT_TRUE@am__append_7 = @LIBMOONSHOT_LIBS@
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@am__append_8 = \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	accept_sec_context.c			\
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	delete_name_attribute.c			\
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	export_name_composite.c			\
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	get_name_attribute.c			\
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	inquire_name.c				\
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	map_name_to_any.c			\
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	release_any_name_mapping.c		\
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	set_name_attribute.c			\
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	util_attr.cpp				\
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	util_base64.c				\
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	util_json.cpp				\
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	util_radius.cpp
+
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@@OPENSAML_TRUE@am__append_9 = util_saml.cpp
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@@SHIBRESOLVER_TRUE@am__append_10 = util_shib.cpp
+@GSSEAP_ENABLE_REAUTH_TRUE@am__append_11 = util_reauth.c
 subdir = mech_eap
 DIST_COMMON = README $(gssinclude_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in AUTHORS COPYING NEWS TODO config.guess \
 	config.sub install-sh
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/minuso.m4 $(top_srcdir)/acinclude.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -73,48 +99,62 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(gssdir)" "$(DESTDIR)$(krb5pluginsdir)" \
 	"$(DESTDIR)$(gssincludedir)"
 LTLIBRARIES = $(gss_LTLIBRARIES) $(krb5plugins_LTLIBRARIES)
-mech_eap_la_DEPENDENCIES = ../libeap/libeap.la
-am__mech_eap_la_SOURCES_DIST = accept_sec_context.c acquire_cred.c \
+am__DEPENDENCIES_1 =
+am__mech_eap_la_SOURCES_DIST = acquire_cred.c \
 	acquire_cred_with_password.c add_cred.c \
 	add_cred_with_password.c authorize_localname.c \
 	canonicalize_name.c compare_name.c context_time.c \
-	delete_name_attribute.c delete_sec_context.c display_name.c \
-	display_name_ext.c display_status.c duplicate_name.c \
-	eap_mech.c export_name.c export_name_composite.c \
-	export_sec_context.c get_mic.c get_name_attribute.c \
-	gsseap_err.c import_name.c import_sec_context.c \
+	delete_sec_context.c display_name.c display_name_ext.c \
+	display_status.c duplicate_name.c eap_mech.c \
+	exchange_meta_data.c export_name.c export_sec_context.c \
+	get_mic.c gsseap_err.c import_name.c import_sec_context.c \
 	indicate_mechs.c init_sec_context.c inquire_attrs_for_mech.c \
 	inquire_context.c inquire_cred.c inquire_cred_by_mech.c \
 	inquire_cred_by_oid.c inquire_mech_for_saslname.c \
-	inquire_mechs_for_name.c inquire_name.c \
-	inquire_names_for_mech.c inquire_saslname_for_mech.c \
-	inquire_sec_context_by_oid.c map_name_to_any.c \
-	process_context_token.c pseudo_random.c radsec_err.c \
-	release_any_name_mapping.c release_cred.c release_name.c \
-	release_oid.c set_name_attribute.c set_cred_option.c \
-	set_sec_context_option.c store_cred.c unwrap.c unwrap_iov.c \
-	util_attr.cpp util_base64.c util_buffer.c util_context.c \
-	util_cksum.c util_cred.c util_crypt.c util_json.cpp util_krb.c \
-	util_lucid.c util_mech.c util_name.c util_oid.c \
-	util_ordering.c util_radius.cpp util_saml.cpp util_shib.cpp \
-	util_sm.c util_token.c verify_mic.c wrap.c wrap_iov.c \
-	wrap_iov_length.c wrap_size_limit.c util_reauth.c
-@GSSEAP_ENABLE_REAUTH_TRUE@am__objects_1 = mech_eap_la-util_reauth.lo
-am_mech_eap_la_OBJECTS = mech_eap_la-accept_sec_context.lo \
-	mech_eap_la-acquire_cred.lo \
+	inquire_mechs_for_name.c inquire_names_for_mech.c \
+	inquire_saslname_for_mech.c inquire_sec_context_by_oid.c \
+	process_context_token.c pseudo_random.c query_mechanism_info.c \
+	query_meta_data.c radsec_err.c release_cred.c release_name.c \
+	release_oid.c set_cred_option.c set_sec_context_option.c \
+	store_cred.c unwrap.c unwrap_iov.c util_buffer.c \
+	util_context.c util_cksum.c util_cred.c util_crypt.c \
+	util_krb.c util_lucid.c util_mech.c util_name.c util_oid.c \
+	util_ordering.c util_sm.c util_tld.c util_token.c verify_mic.c \
+	wrap.c wrap_iov.c wrap_iov_length.c wrap_size_limit.c \
+	gssapiP_eap.h util_attr.h util_base64.h util.h util_json.h \
+	util_radius.h util_reauth.h util_saml.h util_shib.h \
+	util_moonshot.c accept_sec_context.c delete_name_attribute.c \
+	export_name_composite.c get_name_attribute.c inquire_name.c \
+	map_name_to_any.c release_any_name_mapping.c \
+	set_name_attribute.c util_attr.cpp util_base64.c util_json.cpp \
+	util_radius.cpp util_saml.cpp util_shib.cpp util_reauth.c
+@LIBMOONSHOT_TRUE@am__objects_1 = mech_eap_la-util_moonshot.lo
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@am__objects_2 = mech_eap_la-accept_sec_context.lo \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	mech_eap_la-delete_name_attribute.lo \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	mech_eap_la-export_name_composite.lo \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	mech_eap_la-get_name_attribute.lo \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	mech_eap_la-inquire_name.lo \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	mech_eap_la-map_name_to_any.lo \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	mech_eap_la-release_any_name_mapping.lo \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	mech_eap_la-set_name_attribute.lo \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	mech_eap_la-util_attr.lo \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	mech_eap_la-util_base64.lo \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	mech_eap_la-util_json.lo \
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@	mech_eap_la-util_radius.lo
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@@OPENSAML_TRUE@am__objects_3 = mech_eap_la-util_saml.lo
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@@SHIBRESOLVER_TRUE@am__objects_4 = mech_eap_la-util_shib.lo
+@GSSEAP_ENABLE_REAUTH_TRUE@am__objects_5 = mech_eap_la-util_reauth.lo
+am_mech_eap_la_OBJECTS = mech_eap_la-acquire_cred.lo \
 	mech_eap_la-acquire_cred_with_password.lo \
 	mech_eap_la-add_cred.lo mech_eap_la-add_cred_with_password.lo \
 	mech_eap_la-authorize_localname.lo \
 	mech_eap_la-canonicalize_name.lo mech_eap_la-compare_name.lo \
-	mech_eap_la-context_time.lo \
-	mech_eap_la-delete_name_attribute.lo \
-	mech_eap_la-delete_sec_context.lo mech_eap_la-display_name.lo \
-	mech_eap_la-display_name_ext.lo mech_eap_la-display_status.lo \
-	mech_eap_la-duplicate_name.lo mech_eap_la-eap_mech.lo \
-	mech_eap_la-export_name.lo \
-	mech_eap_la-export_name_composite.lo \
-	mech_eap_la-export_sec_context.lo mech_eap_la-get_mic.lo \
-	mech_eap_la-get_name_attribute.lo mech_eap_la-gsseap_err.lo \
+	mech_eap_la-context_time.lo mech_eap_la-delete_sec_context.lo \
+	mech_eap_la-display_name.lo mech_eap_la-display_name_ext.lo \
+	mech_eap_la-display_status.lo mech_eap_la-duplicate_name.lo \
+	mech_eap_la-eap_mech.lo mech_eap_la-exchange_meta_data.lo \
+	mech_eap_la-export_name.lo mech_eap_la-export_sec_context.lo \
+	mech_eap_la-get_mic.lo mech_eap_la-gsseap_err.lo \
 	mech_eap_la-import_name.lo mech_eap_la-import_sec_context.lo \
 	mech_eap_la-indicate_mechs.lo mech_eap_la-init_sec_context.lo \
 	mech_eap_la-inquire_attrs_for_mech.lo \
@@ -123,38 +163,35 @@ am_mech_eap_la_OBJECTS = mech_eap_la-accept_sec_context.lo \
 	mech_eap_la-inquire_cred_by_oid.lo \
 	mech_eap_la-inquire_mech_for_saslname.lo \
 	mech_eap_la-inquire_mechs_for_name.lo \
-	mech_eap_la-inquire_name.lo \
 	mech_eap_la-inquire_names_for_mech.lo \
 	mech_eap_la-inquire_saslname_for_mech.lo \
 	mech_eap_la-inquire_sec_context_by_oid.lo \
-	mech_eap_la-map_name_to_any.lo \
 	mech_eap_la-process_context_token.lo \
-	mech_eap_la-pseudo_random.lo mech_eap_la-radsec_err.lo \
-	mech_eap_la-release_any_name_mapping.lo \
+	mech_eap_la-pseudo_random.lo \
+	mech_eap_la-query_mechanism_info.lo \
+	mech_eap_la-query_meta_data.lo mech_eap_la-radsec_err.lo \
 	mech_eap_la-release_cred.lo mech_eap_la-release_name.lo \
-	mech_eap_la-release_oid.lo mech_eap_la-set_name_attribute.lo \
-	mech_eap_la-set_cred_option.lo \
+	mech_eap_la-release_oid.lo mech_eap_la-set_cred_option.lo \
 	mech_eap_la-set_sec_context_option.lo \
 	mech_eap_la-store_cred.lo mech_eap_la-unwrap.lo \
-	mech_eap_la-unwrap_iov.lo mech_eap_la-util_attr.lo \
-	mech_eap_la-util_base64.lo mech_eap_la-util_buffer.lo \
+	mech_eap_la-unwrap_iov.lo mech_eap_la-util_buffer.lo \
 	mech_eap_la-util_context.lo mech_eap_la-util_cksum.lo \
 	mech_eap_la-util_cred.lo mech_eap_la-util_crypt.lo \
-	mech_eap_la-util_json.lo mech_eap_la-util_krb.lo \
-	mech_eap_la-util_lucid.lo mech_eap_la-util_mech.lo \
-	mech_eap_la-util_name.lo mech_eap_la-util_oid.lo \
-	mech_eap_la-util_ordering.lo mech_eap_la-util_radius.lo \
-	mech_eap_la-util_saml.lo mech_eap_la-util_shib.lo \
-	mech_eap_la-util_sm.lo mech_eap_la-util_token.lo \
-	mech_eap_la-verify_mic.lo mech_eap_la-wrap.lo \
-	mech_eap_la-wrap_iov.lo mech_eap_la-wrap_iov_length.lo \
-	mech_eap_la-wrap_size_limit.lo $(am__objects_1)
+	mech_eap_la-util_krb.lo mech_eap_la-util_lucid.lo \
+	mech_eap_la-util_mech.lo mech_eap_la-util_name.lo \
+	mech_eap_la-util_oid.lo mech_eap_la-util_ordering.lo \
+	mech_eap_la-util_sm.lo mech_eap_la-util_tld.lo \
+	mech_eap_la-util_token.lo mech_eap_la-verify_mic.lo \
+	mech_eap_la-wrap.lo mech_eap_la-wrap_iov.lo \
+	mech_eap_la-wrap_iov_length.lo mech_eap_la-wrap_size_limit.lo \
+	$(am__objects_1) $(am__objects_2) $(am__objects_3) \
+	$(am__objects_4) $(am__objects_5)
 mech_eap_la_OBJECTS = $(am_mech_eap_la_OBJECTS)
 mech_eap_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(mech_eap_la_CXXFLAGS) \
 	$(CXXFLAGS) $(mech_eap_la_LDFLAGS) $(LDFLAGS) -o $@
 radius_ad_la_DEPENDENCIES =
-am__radius_ad_la_SOURCES_DIST = util_adshim.c
+am__radius_ad_la_SOURCES_DIST = util_adshim.c authdata_plugin.h
 @GSSEAP_ENABLE_REAUTH_TRUE@@HEIMDAL_FALSE@am_radius_ad_la_OBJECTS = radius_ad_la-util_adshim.lo
 radius_ad_la_OBJECTS = $(am_radius_ad_la_OBJECTS)
 radius_ad_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -164,7 +201,7 @@ radius_ad_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 @GSSEAP_ENABLE_REAUTH_TRUE@@HEIMDAL_FALSE@	-rpath \
 @GSSEAP_ENABLE_REAUTH_TRUE@@HEIMDAL_FALSE@	$(krb5pluginsdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
-depcomp = $(SHELL) $(top_srcdir)/depcomp
+depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -195,6 +232,7 @@ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
+AS = @AS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -212,6 +250,7 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -230,21 +269,29 @@ JANSSON_CFLAGS = @JANSSON_CFLAGS@
 JANSSON_LDFLAGS = @JANSSON_LDFLAGS@
 JANSSON_LIBS = @JANSSON_LIBS@
 KRB5_CFLAGS = @KRB5_CFLAGS@
+KRB5_LDFLAGS = @KRB5_LDFLAGS@
 KRB5_LIBS = @KRB5_LIBS@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
+LIBMOONSHOT_CFLAGS = @LIBMOONSHOT_CFLAGS@
+LIBMOONSHOT_LDFLAGS = @LIBMOONSHOT_LDFLAGS@
+LIBMOONSHOT_LIBS = @LIBMOONSHOT_LIBS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OPENSAML_CXXFLAGS = @OPENSAML_CXXFLAGS@
+OPENSAML_LDFLAGS = @OPENSAML_LDFLAGS@
+OPENSAML_LIBS = @OPENSAML_LIBS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -326,55 +373,74 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
+EXTRA_DIST = gsseap_err.et radsec_err.et \
+	mech_eap.exports mech_eap-noacceptor.exports  radius_ad.exports \
+	LICENSE AUTHORS
+
 gssincludedir = $(includedir)/gssapi
 gssinclude_HEADERS = gssapi_eap.h
-EAP_CFLAGS = -I$(srcdir)/../libeap/src -I$(srcdir)/../libeap/src/common -I$(srcdir)/../libeap/src/eap_common  \
-	-I$(srcdir)/../libeap/src/utils \
-	-DEAP_TLS -DEAP_PEAP -DEAP_TTLS -DEAP_MD5 -DEAP_MSCHAPv2 -DEAP_GTC -DEAP_OTP -DEAP_LEAP -DEAP_PSK -DEAP_PAX -DEAP_SAKE -DEAP_GPSK -DEAP_GPSK_SHA256 -DEAP_SERVER_IDENTITY -DEAP_SERVER_TLS -DEAP_SERVER_PEAP -DEAP_SERVER_TTLS -DEAP_SERVER_MD5 -DEAP_SERVER_MSCHAPV2 -DEAP_SERVER_GTC -DEAP_SERVER_PSK -DEAP_SERVER_PAX -DEAP_SERVER_SAKE -DEAP_SERVER_GPSK -DEAP_SERVER_GPSK_SHA256 -DIEEE8021X_EAPOL
-
+EAP_CFLAGS = -I$(srcdir)/../libeap/src \
+	-I$(srcdir)/../libeap/src/common \
+	-I$(srcdir)/../libeap/src/eap_common \
+	-I$(srcdir)/../libeap/src/utils $(am__append_1) \
+	$(am__append_2)
+@GSSEAP_ENABLE_ACCEPTOR_FALSE@GSSEAP_EXPORTS = mech_eap-noacceptor.exports
+@GSSEAP_ENABLE_ACCEPTOR_TRUE@GSSEAP_EXPORTS = mech_eap.exports
 gssdir = $(libdir)/gss
 gss_LTLIBRARIES = mech_eap.la
+@TARGET_WINDOWS_FALSE@OS_LIBS = 
+@TARGET_WINDOWS_TRUE@OS_LIBS = -lshell32 -ladvapi32 -lws2_32 -lcomerr32
+@TARGET_WINDOWS_FALSE@mech_eap_la_CFLAGS = -Werror -Wall \
+@TARGET_WINDOWS_FALSE@	-Wunused-parameter @KRB5_CFLAGS@ \
+@TARGET_WINDOWS_FALSE@	@RADSEC_CFLAGS@ @TARGET_CFLAGS@ \
+@TARGET_WINDOWS_FALSE@	$(EAP_CFLAGS) $(am__append_5)
+@TARGET_WINDOWS_TRUE@mech_eap_la_CFLAGS = -Zi @KRB5_CFLAGS@ \
+@TARGET_WINDOWS_TRUE@	@RADSEC_CFLAGS@ @TARGET_CFLAGS@ \
+@TARGET_WINDOWS_TRUE@	$(EAP_CFLAGS) $(am__append_5)
+@TARGET_WINDOWS_FALSE@mech_eap_la_CXXFLAGS = -Werror -Wall \
+@TARGET_WINDOWS_FALSE@	-Wunused-parameter @KRB5_CFLAGS@ \
+@TARGET_WINDOWS_FALSE@	@RADSEC_CFLAGS@ @OPENSAML_CXXFLAGS@ \
+@TARGET_WINDOWS_FALSE@	@SHIBRESOLVER_CXXFLAGS@ \
+@TARGET_WINDOWS_FALSE@	@SHIBSP_CXXFLAGS@ @TARGET_CFLAGS@ \
+@TARGET_WINDOWS_FALSE@	$(EAP_CFLAGS)
+@TARGET_WINDOWS_TRUE@mech_eap_la_CXXFLAGS = -Zi @KRB5_CFLAGS@ \
+@TARGET_WINDOWS_TRUE@	@RADSEC_CFLAGS@ @OPENSAML_CXXFLAGS@ \
+@TARGET_WINDOWS_TRUE@	@SHIBRESOLVER_CXXFLAGS@ @SHIBSP_CXXFLAGS@ \
+@TARGET_WINDOWS_TRUE@	@TARGET_CFLAGS@ $(EAP_CFLAGS)
+mech_eap_la_DEPENDENCIES = $(GSSEAP_EXPORTS)
 mech_eap_la_CPPFLAGS = -DBUILD_GSSEAP_LIB -DSYSCONFDIR=\"${sysconfdir}\" -DDATAROOTDIR=\"${datarootdir}\"
-mech_eap_la_CFLAGS = -Werror -Wall -Wunused-parameter \
-			@KRB5_CFLAGS@  @RADSEC_CFLAGS@ @TARGET_CFLAGS@ $(EAP_CFLAGS)
-
-mech_eap_la_CXXFLAGS = -Werror -Wall -Wunused-parameter \
-			@KRB5_CFLAGS@  @RADSEC_CFLAGS@ \
-		        @SHIBRESOLVER_CXXFLAGS@ @SHIBSP_CXXFLAGS@ @TARGET_CFLAGS@ $(EAP_CFLAGS)
-
-mech_eap_la_LDFLAGS = -avoid-version -module \
-			-export-symbols mech_eap.exports -no-undefined \
-			@RADSEC_LDFLAGS@ @TARGET_LDFLAGS@
-
+mech_eap_la_LDFLAGS = -avoid-version -module -export-symbols \
+	$(GSSEAP_EXPORTS) -no-undefined @KRB5_LDFLAGS@ \
+	@RADSEC_LDFLAGS@ @TARGET_LDFLAGS@ $(am__append_3) \
+	$(am__append_6)
 mech_eap_la_LIBADD = @KRB5_LIBS@ ../libeap/libeap.la @RADSEC_LIBS@ \
-		       @SHIBRESOLVER_LIBS@ @SHIBSP_LIBS@ @JANSSON_LIBS@
-
-mech_eap_la_SOURCES = accept_sec_context.c acquire_cred.c \
-	acquire_cred_with_password.c add_cred.c \
-	add_cred_with_password.c authorize_localname.c \
+	@OPENSAML_LIBS@ @SHIBRESOLVER_LIBS@ @SHIBSP_LIBS@ \
+	@JANSSON_LIBS@ $(am__append_7)
+mech_eap_la_SOURCES = acquire_cred.c acquire_cred_with_password.c \
+	add_cred.c add_cred_with_password.c authorize_localname.c \
 	canonicalize_name.c compare_name.c context_time.c \
-	delete_name_attribute.c delete_sec_context.c display_name.c \
-	display_name_ext.c display_status.c duplicate_name.c \
-	eap_mech.c export_name.c export_name_composite.c \
-	export_sec_context.c get_mic.c get_name_attribute.c \
-	gsseap_err.c import_name.c import_sec_context.c \
+	delete_sec_context.c display_name.c display_name_ext.c \
+	display_status.c duplicate_name.c eap_mech.c \
+	exchange_meta_data.c export_name.c export_sec_context.c \
+	get_mic.c gsseap_err.c import_name.c import_sec_context.c \
 	indicate_mechs.c init_sec_context.c inquire_attrs_for_mech.c \
 	inquire_context.c inquire_cred.c inquire_cred_by_mech.c \
 	inquire_cred_by_oid.c inquire_mech_for_saslname.c \
-	inquire_mechs_for_name.c inquire_name.c \
-	inquire_names_for_mech.c inquire_saslname_for_mech.c \
-	inquire_sec_context_by_oid.c map_name_to_any.c \
-	process_context_token.c pseudo_random.c radsec_err.c \
-	release_any_name_mapping.c release_cred.c release_name.c \
-	release_oid.c set_name_attribute.c set_cred_option.c \
-	set_sec_context_option.c store_cred.c unwrap.c unwrap_iov.c \
-	util_attr.cpp util_base64.c util_buffer.c util_context.c \
-	util_cksum.c util_cred.c util_crypt.c util_json.cpp util_krb.c \
-	util_lucid.c util_mech.c util_name.c util_oid.c \
-	util_ordering.c util_radius.cpp util_saml.cpp util_shib.cpp \
-	util_sm.c util_token.c verify_mic.c wrap.c wrap_iov.c \
-	wrap_iov_length.c wrap_size_limit.c $(am__append_1)
-BUILT_SOURCES = gsseap_err.c radsec_err.c
+	inquire_mechs_for_name.c inquire_names_for_mech.c \
+	inquire_saslname_for_mech.c inquire_sec_context_by_oid.c \
+	process_context_token.c pseudo_random.c query_mechanism_info.c \
+	query_meta_data.c radsec_err.c release_cred.c release_name.c \
+	release_oid.c set_cred_option.c set_sec_context_option.c \
+	store_cred.c unwrap.c unwrap_iov.c util_buffer.c \
+	util_context.c util_cksum.c util_cred.c util_crypt.c \
+	util_krb.c util_lucid.c util_mech.c util_name.c util_oid.c \
+	util_ordering.c util_sm.c util_tld.c util_token.c verify_mic.c \
+	wrap.c wrap_iov.c wrap_iov_length.c wrap_size_limit.c \
+	gssapiP_eap.h util_attr.h util_base64.h util.h util_json.h \
+	util_radius.h util_reauth.h util_saml.h util_shib.h \
+	$(am__append_4) $(am__append_8) $(am__append_9) \
+	$(am__append_10) $(am__append_11)
+BUILT_SOURCES = gsseap_err.c radsec_err.c gsseap_err.h radsec_err.h
 @GSSEAP_ENABLE_REAUTH_TRUE@@HEIMDAL_FALSE@krb5pluginsdir = $(libdir)/krb5/plugins/authdata
 @GSSEAP_ENABLE_REAUTH_TRUE@@HEIMDAL_FALSE@krb5plugins_LTLIBRARIES = radius_ad.la
 @GSSEAP_ENABLE_REAUTH_TRUE@@HEIMDAL_FALSE@radius_ad_la_CFLAGS = -Werror -Wall -Wunused-parameter \
@@ -384,13 +450,13 @@ BUILT_SOURCES = gsseap_err.c radsec_err.c
 @GSSEAP_ENABLE_REAUTH_TRUE@@HEIMDAL_FALSE@		       -export-symbols radius_ad.exports -no-undefined
 
 @GSSEAP_ENABLE_REAUTH_TRUE@@HEIMDAL_FALSE@radius_ad_la_LIBADD = @KRB5_LIBS@
-@GSSEAP_ENABLE_REAUTH_TRUE@@HEIMDAL_FALSE@radius_ad_la_SOURCES = util_adshim.c
+@GSSEAP_ENABLE_REAUTH_TRUE@@HEIMDAL_FALSE@radius_ad_la_SOURCES = util_adshim.c authdata_plugin.h
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .cpp .lo .o .obj
-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -415,9 +481,9 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
-$(top_srcdir)/configure:  $(am__configure_deps)
+$(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-$(ACLOCAL_M4):  $(am__aclocal_m4_deps)
+$(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 install-gssLTLIBRARIES: $(gss_LTLIBRARIES)
@@ -509,6 +575,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-display_status.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-duplicate_name.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-eap_mech.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-exchange_meta_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-export_name.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-export_name_composite.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-export_sec_context.Plo@am__quote@
@@ -533,6 +600,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-map_name_to_any.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-process_context_token.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-pseudo_random.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-query_mechanism_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-query_meta_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-radsec_err.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-release_any_name_mapping.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-release_cred.Plo@am__quote@
@@ -555,6 +624,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_krb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_lucid.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_mech.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_moonshot.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_name.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_oid.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_ordering.Plo@am__quote@
@@ -563,6 +633,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_saml.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_shib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_sm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_tld.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-util_token.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-verify_mic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mech_eap_la-wrap.Plo@am__quote@
@@ -591,13 +662,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-mech_eap_la-accept_sec_context.lo: accept_sec_context.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-accept_sec_context.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-accept_sec_context.Tpo -c -o mech_eap_la-accept_sec_context.lo `test -f 'accept_sec_context.c' || echo '$(srcdir)/'`accept_sec_context.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-accept_sec_context.Tpo $(DEPDIR)/mech_eap_la-accept_sec_context.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='accept_sec_context.c' object='mech_eap_la-accept_sec_context.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-accept_sec_context.lo `test -f 'accept_sec_context.c' || echo '$(srcdir)/'`accept_sec_context.c
 
 mech_eap_la-acquire_cred.lo: acquire_cred.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-acquire_cred.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-acquire_cred.Tpo -c -o mech_eap_la-acquire_cred.lo `test -f 'acquire_cred.c' || echo '$(srcdir)/'`acquire_cred.c
@@ -655,13 +719,6 @@ mech_eap_la-context_time.lo: context_time.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-context_time.lo `test -f 'context_time.c' || echo '$(srcdir)/'`context_time.c
 
-mech_eap_la-delete_name_attribute.lo: delete_name_attribute.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-delete_name_attribute.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-delete_name_attribute.Tpo -c -o mech_eap_la-delete_name_attribute.lo `test -f 'delete_name_attribute.c' || echo '$(srcdir)/'`delete_name_attribute.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-delete_name_attribute.Tpo $(DEPDIR)/mech_eap_la-delete_name_attribute.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='delete_name_attribute.c' object='mech_eap_la-delete_name_attribute.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-delete_name_attribute.lo `test -f 'delete_name_attribute.c' || echo '$(srcdir)/'`delete_name_attribute.c
-
 mech_eap_la-delete_sec_context.lo: delete_sec_context.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-delete_sec_context.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-delete_sec_context.Tpo -c -o mech_eap_la-delete_sec_context.lo `test -f 'delete_sec_context.c' || echo '$(srcdir)/'`delete_sec_context.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-delete_sec_context.Tpo $(DEPDIR)/mech_eap_la-delete_sec_context.Plo
@@ -704,19 +761,19 @@ mech_eap_la-eap_mech.lo: eap_mech.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-eap_mech.lo `test -f 'eap_mech.c' || echo '$(srcdir)/'`eap_mech.c
 
+mech_eap_la-exchange_meta_data.lo: exchange_meta_data.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-exchange_meta_data.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-exchange_meta_data.Tpo -c -o mech_eap_la-exchange_meta_data.lo `test -f 'exchange_meta_data.c' || echo '$(srcdir)/'`exchange_meta_data.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-exchange_meta_data.Tpo $(DEPDIR)/mech_eap_la-exchange_meta_data.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='exchange_meta_data.c' object='mech_eap_la-exchange_meta_data.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-exchange_meta_data.lo `test -f 'exchange_meta_data.c' || echo '$(srcdir)/'`exchange_meta_data.c
+
 mech_eap_la-export_name.lo: export_name.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-export_name.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-export_name.Tpo -c -o mech_eap_la-export_name.lo `test -f 'export_name.c' || echo '$(srcdir)/'`export_name.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-export_name.Tpo $(DEPDIR)/mech_eap_la-export_name.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='export_name.c' object='mech_eap_la-export_name.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-export_name.lo `test -f 'export_name.c' || echo '$(srcdir)/'`export_name.c
-
-mech_eap_la-export_name_composite.lo: export_name_composite.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-export_name_composite.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-export_name_composite.Tpo -c -o mech_eap_la-export_name_composite.lo `test -f 'export_name_composite.c' || echo '$(srcdir)/'`export_name_composite.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-export_name_composite.Tpo $(DEPDIR)/mech_eap_la-export_name_composite.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='export_name_composite.c' object='mech_eap_la-export_name_composite.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-export_name_composite.lo `test -f 'export_name_composite.c' || echo '$(srcdir)/'`export_name_composite.c
 
 mech_eap_la-export_sec_context.lo: export_sec_context.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-export_sec_context.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-export_sec_context.Tpo -c -o mech_eap_la-export_sec_context.lo `test -f 'export_sec_context.c' || echo '$(srcdir)/'`export_sec_context.c
@@ -731,13 +788,6 @@ mech_eap_la-get_mic.lo: get_mic.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='get_mic.c' object='mech_eap_la-get_mic.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-get_mic.lo `test -f 'get_mic.c' || echo '$(srcdir)/'`get_mic.c
-
-mech_eap_la-get_name_attribute.lo: get_name_attribute.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-get_name_attribute.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-get_name_attribute.Tpo -c -o mech_eap_la-get_name_attribute.lo `test -f 'get_name_attribute.c' || echo '$(srcdir)/'`get_name_attribute.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-get_name_attribute.Tpo $(DEPDIR)/mech_eap_la-get_name_attribute.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='get_name_attribute.c' object='mech_eap_la-get_name_attribute.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-get_name_attribute.lo `test -f 'get_name_attribute.c' || echo '$(srcdir)/'`get_name_attribute.c
 
 mech_eap_la-gsseap_err.lo: gsseap_err.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-gsseap_err.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-gsseap_err.Tpo -c -o mech_eap_la-gsseap_err.lo `test -f 'gsseap_err.c' || echo '$(srcdir)/'`gsseap_err.c
@@ -823,13 +873,6 @@ mech_eap_la-inquire_mechs_for_name.lo: inquire_mechs_for_name.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-inquire_mechs_for_name.lo `test -f 'inquire_mechs_for_name.c' || echo '$(srcdir)/'`inquire_mechs_for_name.c
 
-mech_eap_la-inquire_name.lo: inquire_name.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-inquire_name.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-inquire_name.Tpo -c -o mech_eap_la-inquire_name.lo `test -f 'inquire_name.c' || echo '$(srcdir)/'`inquire_name.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-inquire_name.Tpo $(DEPDIR)/mech_eap_la-inquire_name.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='inquire_name.c' object='mech_eap_la-inquire_name.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-inquire_name.lo `test -f 'inquire_name.c' || echo '$(srcdir)/'`inquire_name.c
-
 mech_eap_la-inquire_names_for_mech.lo: inquire_names_for_mech.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-inquire_names_for_mech.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-inquire_names_for_mech.Tpo -c -o mech_eap_la-inquire_names_for_mech.lo `test -f 'inquire_names_for_mech.c' || echo '$(srcdir)/'`inquire_names_for_mech.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-inquire_names_for_mech.Tpo $(DEPDIR)/mech_eap_la-inquire_names_for_mech.Plo
@@ -851,13 +894,6 @@ mech_eap_la-inquire_sec_context_by_oid.lo: inquire_sec_context_by_oid.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-inquire_sec_context_by_oid.lo `test -f 'inquire_sec_context_by_oid.c' || echo '$(srcdir)/'`inquire_sec_context_by_oid.c
 
-mech_eap_la-map_name_to_any.lo: map_name_to_any.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-map_name_to_any.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-map_name_to_any.Tpo -c -o mech_eap_la-map_name_to_any.lo `test -f 'map_name_to_any.c' || echo '$(srcdir)/'`map_name_to_any.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-map_name_to_any.Tpo $(DEPDIR)/mech_eap_la-map_name_to_any.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='map_name_to_any.c' object='mech_eap_la-map_name_to_any.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-map_name_to_any.lo `test -f 'map_name_to_any.c' || echo '$(srcdir)/'`map_name_to_any.c
-
 mech_eap_la-process_context_token.lo: process_context_token.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-process_context_token.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-process_context_token.Tpo -c -o mech_eap_la-process_context_token.lo `test -f 'process_context_token.c' || echo '$(srcdir)/'`process_context_token.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-process_context_token.Tpo $(DEPDIR)/mech_eap_la-process_context_token.Plo
@@ -872,19 +908,26 @@ mech_eap_la-pseudo_random.lo: pseudo_random.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-pseudo_random.lo `test -f 'pseudo_random.c' || echo '$(srcdir)/'`pseudo_random.c
 
+mech_eap_la-query_mechanism_info.lo: query_mechanism_info.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-query_mechanism_info.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-query_mechanism_info.Tpo -c -o mech_eap_la-query_mechanism_info.lo `test -f 'query_mechanism_info.c' || echo '$(srcdir)/'`query_mechanism_info.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-query_mechanism_info.Tpo $(DEPDIR)/mech_eap_la-query_mechanism_info.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='query_mechanism_info.c' object='mech_eap_la-query_mechanism_info.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-query_mechanism_info.lo `test -f 'query_mechanism_info.c' || echo '$(srcdir)/'`query_mechanism_info.c
+
+mech_eap_la-query_meta_data.lo: query_meta_data.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-query_meta_data.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-query_meta_data.Tpo -c -o mech_eap_la-query_meta_data.lo `test -f 'query_meta_data.c' || echo '$(srcdir)/'`query_meta_data.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-query_meta_data.Tpo $(DEPDIR)/mech_eap_la-query_meta_data.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='query_meta_data.c' object='mech_eap_la-query_meta_data.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-query_meta_data.lo `test -f 'query_meta_data.c' || echo '$(srcdir)/'`query_meta_data.c
+
 mech_eap_la-radsec_err.lo: radsec_err.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-radsec_err.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-radsec_err.Tpo -c -o mech_eap_la-radsec_err.lo `test -f 'radsec_err.c' || echo '$(srcdir)/'`radsec_err.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-radsec_err.Tpo $(DEPDIR)/mech_eap_la-radsec_err.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='radsec_err.c' object='mech_eap_la-radsec_err.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-radsec_err.lo `test -f 'radsec_err.c' || echo '$(srcdir)/'`radsec_err.c
-
-mech_eap_la-release_any_name_mapping.lo: release_any_name_mapping.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-release_any_name_mapping.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-release_any_name_mapping.Tpo -c -o mech_eap_la-release_any_name_mapping.lo `test -f 'release_any_name_mapping.c' || echo '$(srcdir)/'`release_any_name_mapping.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-release_any_name_mapping.Tpo $(DEPDIR)/mech_eap_la-release_any_name_mapping.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='release_any_name_mapping.c' object='mech_eap_la-release_any_name_mapping.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-release_any_name_mapping.lo `test -f 'release_any_name_mapping.c' || echo '$(srcdir)/'`release_any_name_mapping.c
 
 mech_eap_la-release_cred.lo: release_cred.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-release_cred.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-release_cred.Tpo -c -o mech_eap_la-release_cred.lo `test -f 'release_cred.c' || echo '$(srcdir)/'`release_cred.c
@@ -906,13 +949,6 @@ mech_eap_la-release_oid.lo: release_oid.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='release_oid.c' object='mech_eap_la-release_oid.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-release_oid.lo `test -f 'release_oid.c' || echo '$(srcdir)/'`release_oid.c
-
-mech_eap_la-set_name_attribute.lo: set_name_attribute.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-set_name_attribute.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-set_name_attribute.Tpo -c -o mech_eap_la-set_name_attribute.lo `test -f 'set_name_attribute.c' || echo '$(srcdir)/'`set_name_attribute.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-set_name_attribute.Tpo $(DEPDIR)/mech_eap_la-set_name_attribute.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='set_name_attribute.c' object='mech_eap_la-set_name_attribute.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-set_name_attribute.lo `test -f 'set_name_attribute.c' || echo '$(srcdir)/'`set_name_attribute.c
 
 mech_eap_la-set_cred_option.lo: set_cred_option.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-set_cred_option.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-set_cred_option.Tpo -c -o mech_eap_la-set_cred_option.lo `test -f 'set_cred_option.c' || echo '$(srcdir)/'`set_cred_option.c
@@ -948,13 +984,6 @@ mech_eap_la-unwrap_iov.lo: unwrap_iov.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwrap_iov.c' object='mech_eap_la-unwrap_iov.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-unwrap_iov.lo `test -f 'unwrap_iov.c' || echo '$(srcdir)/'`unwrap_iov.c
-
-mech_eap_la-util_base64.lo: util_base64.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-util_base64.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-util_base64.Tpo -c -o mech_eap_la-util_base64.lo `test -f 'util_base64.c' || echo '$(srcdir)/'`util_base64.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-util_base64.Tpo $(DEPDIR)/mech_eap_la-util_base64.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='util_base64.c' object='mech_eap_la-util_base64.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-util_base64.lo `test -f 'util_base64.c' || echo '$(srcdir)/'`util_base64.c
 
 mech_eap_la-util_buffer.lo: util_buffer.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-util_buffer.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-util_buffer.Tpo -c -o mech_eap_la-util_buffer.lo `test -f 'util_buffer.c' || echo '$(srcdir)/'`util_buffer.c
@@ -1040,6 +1069,13 @@ mech_eap_la-util_sm.lo: util_sm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-util_sm.lo `test -f 'util_sm.c' || echo '$(srcdir)/'`util_sm.c
 
+mech_eap_la-util_tld.lo: util_tld.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-util_tld.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-util_tld.Tpo -c -o mech_eap_la-util_tld.lo `test -f 'util_tld.c' || echo '$(srcdir)/'`util_tld.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-util_tld.Tpo $(DEPDIR)/mech_eap_la-util_tld.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='util_tld.c' object='mech_eap_la-util_tld.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-util_tld.lo `test -f 'util_tld.c' || echo '$(srcdir)/'`util_tld.c
+
 mech_eap_la-util_token.lo: util_token.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-util_token.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-util_token.Tpo -c -o mech_eap_la-util_token.lo `test -f 'util_token.c' || echo '$(srcdir)/'`util_token.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-util_token.Tpo $(DEPDIR)/mech_eap_la-util_token.Plo
@@ -1081,6 +1117,76 @@ mech_eap_la-wrap_size_limit.lo: wrap_size_limit.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='wrap_size_limit.c' object='mech_eap_la-wrap_size_limit.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-wrap_size_limit.lo `test -f 'wrap_size_limit.c' || echo '$(srcdir)/'`wrap_size_limit.c
+
+mech_eap_la-util_moonshot.lo: util_moonshot.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-util_moonshot.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-util_moonshot.Tpo -c -o mech_eap_la-util_moonshot.lo `test -f 'util_moonshot.c' || echo '$(srcdir)/'`util_moonshot.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-util_moonshot.Tpo $(DEPDIR)/mech_eap_la-util_moonshot.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='util_moonshot.c' object='mech_eap_la-util_moonshot.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-util_moonshot.lo `test -f 'util_moonshot.c' || echo '$(srcdir)/'`util_moonshot.c
+
+mech_eap_la-accept_sec_context.lo: accept_sec_context.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-accept_sec_context.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-accept_sec_context.Tpo -c -o mech_eap_la-accept_sec_context.lo `test -f 'accept_sec_context.c' || echo '$(srcdir)/'`accept_sec_context.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-accept_sec_context.Tpo $(DEPDIR)/mech_eap_la-accept_sec_context.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='accept_sec_context.c' object='mech_eap_la-accept_sec_context.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-accept_sec_context.lo `test -f 'accept_sec_context.c' || echo '$(srcdir)/'`accept_sec_context.c
+
+mech_eap_la-delete_name_attribute.lo: delete_name_attribute.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-delete_name_attribute.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-delete_name_attribute.Tpo -c -o mech_eap_la-delete_name_attribute.lo `test -f 'delete_name_attribute.c' || echo '$(srcdir)/'`delete_name_attribute.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-delete_name_attribute.Tpo $(DEPDIR)/mech_eap_la-delete_name_attribute.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='delete_name_attribute.c' object='mech_eap_la-delete_name_attribute.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-delete_name_attribute.lo `test -f 'delete_name_attribute.c' || echo '$(srcdir)/'`delete_name_attribute.c
+
+mech_eap_la-export_name_composite.lo: export_name_composite.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-export_name_composite.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-export_name_composite.Tpo -c -o mech_eap_la-export_name_composite.lo `test -f 'export_name_composite.c' || echo '$(srcdir)/'`export_name_composite.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-export_name_composite.Tpo $(DEPDIR)/mech_eap_la-export_name_composite.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='export_name_composite.c' object='mech_eap_la-export_name_composite.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-export_name_composite.lo `test -f 'export_name_composite.c' || echo '$(srcdir)/'`export_name_composite.c
+
+mech_eap_la-get_name_attribute.lo: get_name_attribute.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-get_name_attribute.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-get_name_attribute.Tpo -c -o mech_eap_la-get_name_attribute.lo `test -f 'get_name_attribute.c' || echo '$(srcdir)/'`get_name_attribute.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-get_name_attribute.Tpo $(DEPDIR)/mech_eap_la-get_name_attribute.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='get_name_attribute.c' object='mech_eap_la-get_name_attribute.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-get_name_attribute.lo `test -f 'get_name_attribute.c' || echo '$(srcdir)/'`get_name_attribute.c
+
+mech_eap_la-inquire_name.lo: inquire_name.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-inquire_name.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-inquire_name.Tpo -c -o mech_eap_la-inquire_name.lo `test -f 'inquire_name.c' || echo '$(srcdir)/'`inquire_name.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-inquire_name.Tpo $(DEPDIR)/mech_eap_la-inquire_name.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='inquire_name.c' object='mech_eap_la-inquire_name.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-inquire_name.lo `test -f 'inquire_name.c' || echo '$(srcdir)/'`inquire_name.c
+
+mech_eap_la-map_name_to_any.lo: map_name_to_any.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-map_name_to_any.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-map_name_to_any.Tpo -c -o mech_eap_la-map_name_to_any.lo `test -f 'map_name_to_any.c' || echo '$(srcdir)/'`map_name_to_any.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-map_name_to_any.Tpo $(DEPDIR)/mech_eap_la-map_name_to_any.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='map_name_to_any.c' object='mech_eap_la-map_name_to_any.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-map_name_to_any.lo `test -f 'map_name_to_any.c' || echo '$(srcdir)/'`map_name_to_any.c
+
+mech_eap_la-release_any_name_mapping.lo: release_any_name_mapping.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-release_any_name_mapping.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-release_any_name_mapping.Tpo -c -o mech_eap_la-release_any_name_mapping.lo `test -f 'release_any_name_mapping.c' || echo '$(srcdir)/'`release_any_name_mapping.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-release_any_name_mapping.Tpo $(DEPDIR)/mech_eap_la-release_any_name_mapping.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='release_any_name_mapping.c' object='mech_eap_la-release_any_name_mapping.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-release_any_name_mapping.lo `test -f 'release_any_name_mapping.c' || echo '$(srcdir)/'`release_any_name_mapping.c
+
+mech_eap_la-set_name_attribute.lo: set_name_attribute.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-set_name_attribute.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-set_name_attribute.Tpo -c -o mech_eap_la-set_name_attribute.lo `test -f 'set_name_attribute.c' || echo '$(srcdir)/'`set_name_attribute.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-set_name_attribute.Tpo $(DEPDIR)/mech_eap_la-set_name_attribute.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='set_name_attribute.c' object='mech_eap_la-set_name_attribute.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-set_name_attribute.lo `test -f 'set_name_attribute.c' || echo '$(srcdir)/'`set_name_attribute.c
+
+mech_eap_la-util_base64.lo: util_base64.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-util_base64.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-util_base64.Tpo -c -o mech_eap_la-util_base64.lo `test -f 'util_base64.c' || echo '$(srcdir)/'`util_base64.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/mech_eap_la-util_base64.Tpo $(DEPDIR)/mech_eap_la-util_base64.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='util_base64.c' object='mech_eap_la-util_base64.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -c -o mech_eap_la-util_base64.lo `test -f 'util_base64.c' || echo '$(srcdir)/'`util_base64.c
 
 mech_eap_la-util_reauth.lo: util_reauth.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mech_eap_la_CPPFLAGS) $(CPPFLAGS) $(mech_eap_la_CFLAGS) $(CFLAGS) -MT mech_eap_la-util_reauth.lo -MD -MP -MF $(DEPDIR)/mech_eap_la-util_reauth.Tpo -c -o mech_eap_la-util_reauth.lo `test -f 'util_reauth.c' || echo '$(srcdir)/'`util_reauth.c
