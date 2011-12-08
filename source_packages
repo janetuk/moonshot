@@ -6,6 +6,7 @@ shibboleth/opensaml2
 shibboleth/sp
 shibboleth/resolver
 libradsec/lib
+ui
 moonshot
 openssh
-firefox
+
