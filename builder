@@ -77,6 +77,11 @@ def build(package):
         print configure_command
         sys.stdout.flush()
         run_cmd(configure_command, shell=True)
+        if dist:
+            try: os.mkdir('doc/api')
+            except: pass
+            run_cmd(schroot_command +' make dist-gzip', shell=True)
+            run_cmd('cp *.tar.gz ' +dist_dir, shell=True)
         run_cmd(schroot_command + ' make', shell=True)
 
 def make_install(package):
@@ -86,7 +91,6 @@ def make_install(package):
         sys.stdout.flush()
         run_cmd(install_command, shell=True)
         
-
 
 def read_packages():
     '''Read in the packages file from source_packages
@@ -120,10 +124,15 @@ opt.add_option('-s', '--schroot',
                dest="schroot",
                help="Specify name of schroot to use for build;"
                "implicitly sets root_command")
+opt.add_option( '--dist', action='store_true',
+                default=False, dest='dist',
+                help = 'make dist-gzip in addition to the build'
+                )
 opt.usage = "%prog [options] [packages]"
 (options, packages) = opt.parse_args()
 prefix = options.prefix
 root_command = options.root_command
+dist = options.dist
 configure_opts = ['--prefix', prefix,
                   "LDFLAGS='-Wl,-L"+prefix+"/lib -Wl,-L/usr/lib/freeradius"
                   + " -Wl,-rpath="+prefix+"/lib'",
@@ -145,6 +154,11 @@ all_packages = read_packages()
 if len(packages) == 0: packages = all_packages
 
 os.umask(022)
+if dist:
+    try:
+        os.mkdir('distributions')
+    except: pass
+    dist_dir = os.path.join(os.getcwd(), 'distributions')
 
 try:
     for p in all_packages:
