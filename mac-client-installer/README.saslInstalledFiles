@@ -1,0 +1,184 @@
+total 0
+drwxrwxr-x  4 root  136 30 Nov 07:41 Library/
+drwxrwxr-x  5 root  170 30 Nov 07:44 usr/
+
+./Library:
+total 0
+drwxrwxr-x  4 root  136 30 Nov 07:41 Frameworks/
+
+./Library/Frameworks:
+total 0
+drwxrwxr-x  6 root  204 30 Nov 07:41 SASL2.framework/
+
+./Library/Frameworks/SASL2.framework:
+total 16
+lrwxr-xr-x  1 root   18 30 Nov 07:27 Headers -> Versions/A/Headers
+lrwxr-xr-x  1 root   20 30 Nov 07:27 Resources -> Versions/A/Resources
+drwxrwxr-x  5 root  170 30 Nov 07:41 Versions/
+
+./Library/Frameworks/SASL2.framework/Versions:
+total 8
+drwxrwxr-x  4 root  136 30 Nov 07:27 A/
+lrwxr-xr-x  1 root    1 30 Nov 07:27 Current -> A
+
+./Library/Frameworks/SASL2.framework/Versions/A:
+total 0
+drwxrwxr-x  9 root  306 30 Nov 07:27 Headers/
+drwxrwxr-x  3 root  102 30 Nov 07:27 Resources/
+
+./Library/Frameworks/SASL2.framework/Versions/A/Headers:
+total 224
+-rw-rw-r--  1 root   1368 30 Nov 07:27 hmac-md5.h
+-rw-rw-r--  1 root   1442 30 Nov 07:27 md5.h
+-rw-rw-r--  1 root   1026 30 Nov 07:27 md5global.h
+-rw-rw-r--  1 root   7273 30 Nov 07:27 prop.h
+-rw-rw-r--  1 root  50521 30 Nov 07:27 sasl.h
+-rw-rw-r--  1 root  34290 30 Nov 07:27 saslplug.h
+-rw-rw-r--  1 root   2648 30 Nov 07:27 saslutil.h
+
+./Library/Frameworks/SASL2.framework/Versions/A/Resources:
+total 8
+-rw-rw-r--  1 root  845 30 Nov 07:27 Info.plist
+
+./usr:
+total 0
+drwxrwxr-x  4 root  136 30 Nov 07:54 lib/
+drwxrwxr-x  6 root  204 30 Nov 07:27 local/
+
+./usr/lib:
+total 8
+lrwxr-xr-x  1 pete  18 30 Nov 07:54 sasl2 -> ../local/lib/sasl2
+
+./usr/local:
+total 0
+drwxrwxr-x  3 root  102 30 Nov 07:27 include/
+drwxrwxr-x  7 root  238 30 Nov 07:27 lib/
+drwxrwxr-x  7 root  238 30 Nov 07:27 sbin/
+drwxrwxr-x  3 root  102 30 Nov 07:27 share/
+
+./usr/local/include:
+total 0
+drwxrwxr-x  9 root  306 30 Nov 07:27 sasl/
+
+./usr/local/include/sasl:
+total 224
+-rw-rw-r--  1 root   1368 30 Nov 07:27 hmac-md5.h
+-rw-rw-r--  1 root   1442 30 Nov 07:27 md5.h
+-rw-rw-r--  1 root   1026 30 Nov 07:27 md5global.h
+-rw-rw-r--  1 root   7273 30 Nov 07:27 prop.h
+-rw-rw-r--  1 root  50521 30 Nov 07:27 sasl.h
+-rw-rw-r--  1 root  34290 30 Nov 07:27 saslplug.h
+-rw-rw-r--  1 root   2648 30 Nov 07:27 saslutil.h
+
+./usr/local/lib:
+total 264
+lrwxr-xr-x   1 root      16 30 Nov 07:27 libsasl2.2.0.23.dylib -> libsasl2.2.dylib
+-rwxrwxr-x   1 root  121592 30 Nov 07:27 libsasl2.2.dylib
+lrwxr-xr-x   1 root      16 30 Nov 07:27 libsasl2.dylib -> libsasl2.2.dylib
+-rwxrwxr-x   1 root     944 30 Nov 07:27 libsasl2.la
+drwxrwxr-x  34 root    1156 30 Nov 07:27 sasl2/
+
+./usr/local/lib/sasl2:
+total 800
+lrwxr-xr-x  1 root     17 30 Nov 07:27 libanonymous.2.0.23.so -> libanonymous.2.so
+-rwxrwxr-x  1 root  22312 30 Nov 07:27 libanonymous.2.so
+-rwxrwxr-x  1 root    952 30 Nov 07:27 libanonymous.la
+lrwxr-xr-x  1 root     17 30 Nov 07:27 libanonymous.so -> libanonymous.2.so
+lrwxr-xr-x  1 root     15 30 Nov 07:27 libcrammd5.2.0.23.so -> libcrammd5.2.so
+-rwxrwxr-x  1 root  26512 30 Nov 07:27 libcrammd5.2.so
+-rwxrwxr-x  1 root    940 30 Nov 07:27 libcrammd5.la
+lrwxr-xr-x  1 root     15 30 Nov 07:27 libcrammd5.so -> libcrammd5.2.so
+lrwxr-xr-x  1 root     17 30 Nov 07:27 libdigestmd5.2.0.23.so -> libdigestmd5.2.so
+-rwxrwxr-x  1 root  55600 30 Nov 07:27 libdigestmd5.2.so
+-rwxrwxr-x  1 root    961 30 Nov 07:27 libdigestmd5.la
+lrwxr-xr-x  1 root     17 30 Nov 07:27 libdigestmd5.so -> libdigestmd5.2.so
+lrwxr-xr-x  1 root     11 30 Nov 07:27 libgs2.2.0.23.so -> libgs2.2.so
+-rwxrwxr-x  1 root  39332 30 Nov 07:27 libgs2.2.so
+-rwxrwxr-x  1 root    958 30 Nov 07:27 libgs2.la
+lrwxr-xr-x  1 root     11 30 Nov 07:27 libgs2.so -> libgs2.2.so
+lrwxr-xr-x  1 root     16 30 Nov 07:27 libgssapiv2.2.0.23.so -> libgssapiv2.2.so
+-rwxrwxr-x  1 root  37680 30 Nov 07:27 libgssapiv2.2.so
+-rwxrwxr-x  1 root    988 30 Nov 07:27 libgssapiv2.la
+lrwxr-xr-x  1 root     16 30 Nov 07:27 libgssapiv2.so -> libgssapiv2.2.so
+lrwxr-xr-x  1 root     11 30 Nov 07:27 libotp.2.0.23.so -> libotp.2.so
+-rwxrwxr-x  1 root  61456 30 Nov 07:27 libotp.2.so
+-rwxrwxr-x  1 root    925 30 Nov 07:27 libotp.la
+lrwxr-xr-x  1 root     11 30 Nov 07:27 libotp.so -> libotp.2.so
+lrwxr-xr-x  1 root     13 30 Nov 07:27 libplain.2.0.23.so -> libplain.2.so
+-rwxrwxr-x  1 root  22032 30 Nov 07:27 libplain.2.so
+-rwxrwxr-x  1 root    928 30 Nov 07:27 libplain.la
+lrwxr-xr-x  1 root     13 30 Nov 07:27 libplain.so -> libplain.2.so
+lrwxr-xr-x  1 root     14 30 Nov 07:27 libsasldb.2.0.23.so -> libsasldb.2.so
+-rwxrwxr-x  1 root  27944 30 Nov 07:27 libsasldb.2.so
+-rwxrwxr-x  1 root    934 30 Nov 07:27 libsasldb.la
+lrwxr-xr-x  1 root     14 30 Nov 07:27 libsasldb.so -> libsasldb.2.so
+
+./usr/local/sbin:
+total 296
+-rwxrwxr-x  1 root  15828 30 Nov 07:27 pluginviewer
+-rwxrwxr-x  1 root  76704 30 Nov 07:27 saslauthd
+-rwxrwxr-x  1 root  21032 30 Nov 07:27 sasldblistusers2
+-rwxrwxr-x  1 root  15620 30 Nov 07:27 saslpasswd2
+-rwxrwxr-x  1 root  15332 30 Nov 07:27 testsaslauthd
+
+./usr/local/share:
+total 0
+drwxrwxr-x  4 root  136 30 Nov 07:27 man/
+
+./usr/local/share/man:
+total 0
+drwxrwxr-x  45 root  1530 30 Nov 07:27 man3/
+drwxrwxr-x   6 root   204 30 Nov 07:27 man8/
+
+./usr/local/share/man/man3:
+total 392
+-rw-rw-r--  1 root  3255 30 Nov 07:27 sasl.3
+-rw-rw-r--  1 root  2914 30 Nov 07:27 sasl_authorize_t.3
+-rw-rw-r--  1 root  7376 30 Nov 07:27 sasl_auxprop.3
+-rw-rw-r--  1 root  2507 30 Nov 07:27 sasl_auxprop_getctx.3
+-rw-rw-r--  1 root  3027 30 Nov 07:27 sasl_auxprop_request.3
+-rw-rw-r--  1 root  4187 30 Nov 07:27 sasl_callbacks.3
+-rw-rw-r--  1 root  3401 30 Nov 07:27 sasl_canon_user_t.3
+-rw-rw-r--  1 root  2871 30 Nov 07:27 sasl_chalprompt_t.3
+-rw-rw-r--  1 root  3108 30 Nov 07:27 sasl_checkapop.3
+-rw-rw-r--  1 root  2926 30 Nov 07:27 sasl_checkpass.3
+-rw-rw-r--  1 root  3143 30 Nov 07:27 sasl_client_init.3
+-rw-rw-r--  1 root  4477 30 Nov 07:27 sasl_client_new.3
+-rw-rw-r--  1 root  4296 30 Nov 07:27 sasl_client_start.3
+-rw-rw-r--  1 root  4148 30 Nov 07:27 sasl_client_step.3
+-rw-rw-r--  1 root  3001 30 Nov 07:27 sasl_decode.3
+-rw-rw-r--  1 root  2440 30 Nov 07:27 sasl_dispose.3
+-rw-rw-r--  1 root  2279 30 Nov 07:27 sasl_done.3
+-rw-rw-r--  1 root  3153 30 Nov 07:27 sasl_encode.3
+-rw-rw-r--  1 root  3153 30 Nov 07:27 sasl_encodev.3
+-rw-rw-r--  1 root  2498 30 Nov 07:27 sasl_errdetail.3
+-rw-rw-r--  1 root  3934 30 Nov 07:27 sasl_errors.3
+-rw-rw-r--  1 root  3137 30 Nov 07:27 sasl_errstring.3
+-rw-rw-r--  1 root  2666 30 Nov 07:27 sasl_getconfpath_t.3
+-rw-rw-r--  1 root  3245 30 Nov 07:27 sasl_getopt_t.3
+-rw-rw-r--  1 root  2645 30 Nov 07:27 sasl_getpath_t.3
+-rw-rw-r--  1 root  3487 30 Nov 07:27 sasl_getprop.3
+-rw-rw-r--  1 root  2921 30 Nov 07:27 sasl_getrealm_t.3
+-rw-rw-r--  1 root  2767 30 Nov 07:27 sasl_getsecret_t.3
+-rw-rw-r--  1 root  2901 30 Nov 07:27 sasl_getsimple_t.3
+-rw-rw-r--  1 root  2475 30 Nov 07:27 sasl_global_listmech.3
+-rw-rw-r--  1 root  2423 30 Nov 07:27 sasl_idle.3
+-rw-rw-r--  1 root  3443 30 Nov 07:27 sasl_listmech.3
+-rw-rw-r--  1 root  2469 30 Nov 07:27 sasl_log_t.3
+-rw-rw-r--  1 root  3175 30 Nov 07:27 sasl_server_init.3
+-rw-rw-r--  1 root  4163 30 Nov 07:27 sasl_server_new.3
+-rw-rw-r--  1 root  4044 30 Nov 07:27 sasl_server_start.3
+-rw-rw-r--  1 root  3289 30 Nov 07:27 sasl_server_step.3
+-rw-rw-r--  1 root  3109 30 Nov 07:27 sasl_server_userdb_checkpass_t.3
+-rw-rw-r--  1 root  3201 30 Nov 07:27 sasl_server_userdb_setpass_t.3
+-rw-rw-r--  1 root  3058 30 Nov 07:27 sasl_setpass.3
+-rw-rw-r--  1 root  3198 30 Nov 07:27 sasl_setprop.3
+-rw-rw-r--  1 root  2639 30 Nov 07:27 sasl_user_exists.3
+-rw-rw-r--  1 root  2957 30 Nov 07:27 sasl_verifyfile_t.3
+
+./usr/local/share/man/man8:
+total 48
+-rw-rw-r--  1 root  3927 30 Nov 07:27 pluginviewer.8
+-rw-rw-r--  1 root  9369 30 Nov 07:27 saslauthd.8
+-rw-rw-r--  1 root  2490 30 Nov 07:27 sasldblistusers2.8
+-rw-rw-r--  1 root  3184 30 Nov 07:27 saslpasswd2.8
