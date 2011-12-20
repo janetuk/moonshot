@@ -1,0 +1,104 @@
+#!/usr/bin/python
+
+'''A script to buildMoonshot  potentially using a schroot for install testing.
+'''
+
+from contextlib import contextmanager
+import os, subprocess, exceptions
+import re
+import sys
+from optparse import OptionParser
+from shutil import copy
+
+
+
+# These variables can be overridden by options. If packages is not
+# set, then it is read from the rpm_packages file
+packages = []  # Set of packages to build
+
+class CommandError(exceptions.StandardError):
+    pass
+
+def is_tarball(name):
+    return re.match('^.*\\.tar\\.gz', name)
+
+def trim_tarball(t):
+    match = re.match('([^/-]*/)?([^-/]+)', t)
+    return match.group(2)
+
+@contextmanager
+def current_directory(dir):
+    "Change the current directory as a context manager; when the context exits, return."
+    cwd = os.getcwd()
+    os.chdir(dir)
+    yield
+    os.chdir(cwd)
+
+
+def run_cmd(args, **kwords):
+    rcode =  subprocess.call( args, **kwords)
+    if rcode <> 0:
+        raise CommandError(args)
+
+def command_output(args) :
+    p = subprocess.Popen(args, stdout=subprocess.PIPE)
+    output = p.communicate()
+    output = output[0]
+    if p.returncode != 0:
+        raise CommandError(args)
+    return output.strip()
+
+def build(package):
+    run_cmd(['rpmbuild', '-ta', package])
+
+
+
+def read_packages():
+    '''Read in the packages file from rpm_packages
+    '''
+    try: pf = file("rpm_packages")
+    except IOError:
+        print "Error: rpm_packages file not found"
+        exit(1)
+    def is_comment(line):
+        if re.match("^\\s*#", line): return False
+        if "#" in line: raise ValueError(
+            "Source package line contains a comment but not at beginning")
+        return True
+    return map(lambda(x): x.rstrip(),
+        filter(is_comment, pf.readlines()))
+
+
+# main program
+opt = OptionParser()
+opt.usage = "%prog [options] distributions_dir [packages]"
+(options, args) = opt.parse_args()
+if len(args) == 0:
+    print "Distributions directory required"
+    exit(1)
+dist_dir = args[0]
+packages = args[1:]
+
+if len(packages) == 0: packages = read_packages()
+package_order = {}
+count = 0
+tarballs = filter(is_tarball, os.listdir(dist_dir))
+for t in packages:
+    package_order[trim_tarball(t)] = count
+    count += 1
+    
+
+os.umask(022)
+
+try:
+    with current_directory(dist_dir):
+        tarballs.sort (key = lambda x: package_order[trim_tarball(x)])
+        for t in tarballs:
+            build(t)
+except CommandError as c:
+    print "Error:" + str(c.args)
+    exit(1)
+
+
+    
+
