@@ -1,0 +1,61 @@
+From fa865c3dc2266efca4881770455f5d5338acf6fc Mon Sep 17 00:00:00 2001
+From: Pete Fotheringham <pete.fotheringham@codethink.co.uk>
+Date: Fri, 23 Dec 2011 18:47:45 +0000
+Subject: [PATCH] Remove "-arch ppc" flags
+
+---
+ Expat/Makefile |    6 +++---
+ Makefile       |    6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/Expat/Makefile b/Expat/Makefile
+index 1a8bec8..a1e9858 100644
+--- a/Expat/Makefile
++++ b/Expat/Makefile
+@@ -36,8 +36,8 @@ DLSRC = dl_dlopen.xs
+ EXE_EXT = 
+ FULL_AR = /usr/bin/ar
+ LD = gcc-4.2 -mmacosx-version-min=10.6.3
+-LDDLFLAGS = -arch x86_64 -arch i386 -arch ppc -bundle -undefined dynamic_lookup -L/usr/local/lib
+-LDFLAGS = -arch x86_64 -arch i386 -arch ppc -L/usr/local/lib
++LDDLFLAGS = -arch x86_64 -arch i386  -bundle -undefined dynamic_lookup -L/usr/local/lib
++LDFLAGS = -arch x86_64 -arch i386  -L/usr/local/lib
+ LIBC = /usr/lib/libc.dylib
+ LIB_EXT = .a
+ OBJ_EXT = .o
+@@ -255,7 +255,7 @@ makemakerdflt : all
+ 
+ # --- MakeMaker cflags section:
+ 
+-CCFLAGS = -arch x86_64 -arch i386 -arch ppc -g -pipe -fno-common -DPERL_DARWIN -fno-strict-aliasing -I/usr/local/include
++CCFLAGS = -arch x86_64 -arch i386  -g -pipe -fno-common -DPERL_DARWIN -fno-strict-aliasing -I/usr/local/include
+ OPTIMIZE = -Os
+ PERLTYPE = 
+ MPOLLUTE = 
+diff --git a/Makefile b/Makefile
+index 1ae6e06..6a58910 100644
+--- a/Makefile
++++ b/Makefile
+@@ -36,8 +36,8 @@ DLSRC = dl_dlopen.xs
+ EXE_EXT = 
+ FULL_AR = /usr/bin/ar
+ LD = gcc-4.2 -mmacosx-version-min=10.6.3
+-LDDLFLAGS = -arch x86_64 -arch i386 -arch ppc -bundle -undefined dynamic_lookup -L/usr/local/lib
+-LDFLAGS = -arch x86_64 -arch i386 -arch ppc -L/usr/local/lib
++LDDLFLAGS = -arch x86_64 -arch i386  -bundle -undefined dynamic_lookup -L/usr/local/lib
++LDFLAGS = -arch x86_64 -arch i386  -L/usr/local/lib
+ LIBC = /usr/lib/libc.dylib
+ LIB_EXT = .a
+ OBJ_EXT = .o
+@@ -363,7 +363,7 @@ DISTVNAME = XML-Parser-2.41
+ 
+ # --- MakeMaker cflags section:
+ 
+-CCFLAGS = -arch x86_64 -arch i386 -arch ppc -g -pipe -fno-common -DPERL_DARWIN -fno-strict-aliasing -I/usr/local/include
++CCFLAGS = -arch x86_64 -arch i386  -g -pipe -fno-common -DPERL_DARWIN -fno-strict-aliasing -I/usr/local/include
+ OPTIMIZE = -Os
+ PERLTYPE = 
+ MPOLLUTE = 
+-- 
+1.7.5.4
+

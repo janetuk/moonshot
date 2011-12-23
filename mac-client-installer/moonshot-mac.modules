@@ -22,12 +22,17 @@
         repo="moonshot-ui.gitorious.git"/>
         <dependencies>
             <dep package="libgee"/>
+            <dep package="dbus-glib"/>
             <dep package="glib"/>
             <dep package="gtk-doc"/>
+            <dep package="libpng"/>
+            <dep package="libtiff"/>
+            <dep package="libjpeg"/>
             <dep package="pango"/>
             <dep package="atk"/>
             <dep package="gdk-pixbuf"/>
             <dep package="gtk+"/>
+            <dep package="gtk-mac-integration"/>
             <dep package="meta-gtk-osx-core"/>
         </dependencies>
     </autotools>
