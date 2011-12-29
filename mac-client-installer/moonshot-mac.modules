@@ -2,22 +2,33 @@
 <!DOCTYPE moduleset SYSTEM "moduleset.dtd">
 <?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
 <moduleset>
+    
+    <repository type="git" name="moonshot.janet.git"
+    href="http://www.project-moonshot.org/git"/>
 
     <repository type="git" name="moonshot-ui.janet.git"
     href="http://www.project-moonshot.org/git/moonshot-ui.git"/>
-
+    
     <repository type="git" name="moonshot-ui.gitorious.git"
-    href="git://gitorious.codethink.co.uk/moonshot-ui/moonshot-ui.git"/>
+    href="git@gitorious.codethink.co.uk:moonshot-ui/moonshot-ui.git"/>
+    
+    <repository type="git" name="cyrus-sasl.janet.git"
+    href="http://www.project-moonshot.org/git/cyrus-sasl"/>
+    
+    <repository type="tarball" name="ftp.cyrus-sasl.org" default="yes"
+    href="ftp://ftp.cyrusimap.org/cyrus-sasl/"/>
 
-    <include href="gtk-osx.modules"/>
-
+<!--    <include href="gtk-osx.modules"/> -->
+  <include href="http://git.gnome.org/browse/gtk-osx/plain/modulesets-stable/gtk-osx.modules"/>
     <metamodule id="meta-moonshot-mac-client">
         <dependencies>
             <dep package="moonshot-ui"/>
+            <dep package="cyrus-sasl"/> 
+<!--            <dep package="moonshot"/> -->
         </dependencies>
     </metamodule>
 
-    <autotools id="moonshot-ui">
+    <autotools id="moonshot-ui" makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/moonshot-ui" >
         <branch 
         repo="moonshot-ui.gitorious.git"/>
         <dependencies>
@@ -31,9 +42,13 @@
             <dep package="pango"/>
             <dep package="atk"/>
             <dep package="gdk-pixbuf"/>
-            <dep package="gtk+"/>
-            <dep package="gtk-mac-integration"/>
+            <dep package="gtk+"/> 
+            <dep package="vala"/>
+            <dep package="shared-mime-info"/>
+            <dep package="meta-gtk-osx-themes"/>
             <dep package="meta-gtk-osx-core"/>
+<!--            <dep package="gtk+-3.0"/> -->
+            <dep package="gtk-mac-integration"/>
         </dependencies>
     </autotools>
     
@@ -45,8 +60,25 @@
             <dep package="glib"/>
         </dependencies>
     </tarball>
-    
 
+    
+    <autotools id="moonshot" autogenargs="--enable-acceptor=no --with-krb5=$PREFIX/usr/local"
+        makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/moonshot">
+        <branch 
+        repo="moonshot.janet.git" module="moonshot.git">
+        <patch file="0001-Move-moonshot-files-up.patch" strip="1"/>
+        </branch>
+        <dependencies>
+       </dependencies>
+    </autotools>
+    
+    <autotools id="cyrus-sasl" autogenargs="--with-gss_impl=mit"
+        makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/sasl">
+        <branch 
+        repo="cyrus-sasl.janet.git"/>
+        <dependencies>
+        </dependencies>
+    </autotools>
 
 </moduleset>
 
