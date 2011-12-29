@@ -1,21 +1,54 @@
 ### Building Mac OS Installer using jhbuild
 
 ## Preparation
+
+# install jhbuild
 Install jhbuild, which Creates working folder ~/gtk
 
-Need Kerberos installed in ~/gtk/inst - in the Krb5 src directory 
+# bootstrap jhbuild
+copy file moonshot/mac-client-installer/.jhbuildrc-custom to $HOME
+then
+$ jhbuild bootstrap --ignore-system
+
+# Kerberos 
+Need MIT Kerberos 1.9.2 installed 
+- in ~/gtk/inst - in the Krb5 src directory 
 $ export CFLAGS="-arch i386"
 $ ./configure --prefix=/Users/pete/gtk/inst/
 $ make
 $ make install
 
-## Building the moonshot SW
-copy file moonshot/mac-client-installer/.jhbuildrc-custom to $HOME
-then
-$ jhbuild bootstrap
+# Building the moonshot SW
+$ jhbuild build  meta-moonshot-mac-client
+Will cause the following errors
+
+*** Error during phase build of perl-xml-parser: ########## Error running make LD_RUN_PATH= *** [6/37]
+choose  [4] Start shell
+$ git apply ~/moonshot/mac-client-installer/0001-Remove-arch-ppc-flags.patch 
+$ make
+$ exit 
+choose [2] Ignore error and continue
+
+make: *** No targets specified and no makefile found.  Stop.
+*** Error during phase build of cyrus-sasl: ########## Error running make   *** [39/41]
+choose  [4] Start shell
+4
+$ ./configure --prefix /Users/pete/gtk/inst --libdir '/Users/pete/gtk/inst/lib' --with-gss_impl=mit 
+$ exit 
+choose [1] Rerun phase build
+
+*** Error during phase configure of moonshot: ########## Error running ./autogen.sh --prefix /Users/pete/gtk/inst --libdir '/Users/pete/gtk/inst/lib' --enable-acceptor=no --with-krb5=$PREFIX/usr/local --enable-acceptor=no  *** [40/41]
+choose [4] Start shell
+$ git apply ~/moonshot/mac-client-installer/0001-Move-moonshot-files-up.patch 
+$ cp -R moonshot/libeap .
+$ ./autogen.sh --prefix /Users/pete/gtk/inst --libdir '/Users/pete/gtk/inst/lib' --enable-acceptor=no 
+$ 4
+
+$ exit
+choose  [1] Rerun phase build
 
 
-
+### Old instructions
 
 
 ###Introduction

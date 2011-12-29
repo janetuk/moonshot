@@ -30,7 +30,8 @@
 
     <autotools id="moonshot-ui" makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/moonshot-ui" >
         <branch 
-        repo="moonshot-ui.gitorious.git"/>
+            repo="moonshot.janet.git" module="moonshot-ui.git">
+        </branch>
         <dependencies>
             <dep package="libgee"/>
             <dep package="dbus-glib"/>
@@ -62,7 +63,7 @@
     </tarball>
 
     
-    <autotools id="moonshot" autogenargs="--enable-acceptor=no --with-krb5=$PREFIX/usr/local"
+    <autotools id="moonshot" autogenargs="--enable-acceptor=no --with-krb5=$PREFIX"
         makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/moonshot">
         <branch 
         repo="moonshot.janet.git" module="moonshot.git">
@@ -75,7 +76,8 @@
     <autotools id="cyrus-sasl" autogenargs="--with-gss_impl=mit"
         makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/sasl">
         <branch 
-        repo="cyrus-sasl.janet.git"/>
+            repo="moonshot.janet.git" module="cyrus-sasl.git">
+        </branch>
         <dependencies>
         </dependencies>
     </autotools>
