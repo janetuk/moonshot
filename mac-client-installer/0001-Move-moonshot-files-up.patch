@@ -1,6 +1,6 @@
-From df22702d72d30843193d98589fee090f2fe63201 Mon Sep 17 00:00:00 2001
+From d491bc19b59fd9d6d9a46fffef1ed82ddec2503d Mon Sep 17 00:00:00 2001
 From: Pete Fotheringham <pete.fotheringham@codethink.co.uk>
-Date: Thu, 29 Dec 2011 09:12:51 +0000
+Date: Thu, 29 Dec 2011 10:05:50 +0000
 Subject: [PATCH] Move moonshot files up
 
 ---
@@ -9,6 +9,7 @@ Subject: [PATCH] Move moonshot files up
  autogen.sh                            |   16 +
  build-aux/compile                     |  144 ++++
  configure.ac                          |   92 +++
+ libeap                                |    1 +
  m4/minuso.m4                          |   35 +
  mech_eap.spec.in                      |   62 ++
  mech_eap/.gitignore                   |   32 +
@@ -121,12 +122,13 @@ Subject: [PATCH] Move moonshot files up
  mech_eap/wrap_iov.c                   |  379 +++++++++++
  mech_eap/wrap_iov_length.c            |  234 +++++++
  mech_eap/wrap_size_limit.c            |   97 +++
- 117 files changed, 24690 insertions(+), 0 deletions(-)
+ 118 files changed, 24691 insertions(+), 0 deletions(-)
  create mode 100644 Makefile.am
  create mode 100644 acinclude.m4
  create mode 100755 autogen.sh
  create mode 100755 build-aux/compile
  create mode 100644 configure.ac
+ create mode 160000 libeap
  create mode 100644 m4/minuso.m4
  create mode 100644 mech_eap.spec.in
  create mode 100644 mech_eap/.gitignore
@@ -243,13 +245,13 @@ Subject: [PATCH] Move moonshot files up
 
 diff --git a/Makefile.am b/Makefile.am
 new file mode 100644
-index 0000000..f9690bd
+index 0000000..0165219
 --- /dev/null
 +++ b/Makefile.am
 @@ -0,0 +1,4 @@
 +AUTOMAKE_OPTIONS = foreign
 +ACLOCAL_AMFLAGS = -I m4
-+SUBDIRS = mech_eap
++SUBDIRS = libeap mech_eap
 +EXTRA_DIST = mech_eap.spec
 diff --git a/acinclude.m4 b/acinclude.m4
 new file mode 100644
@@ -795,7 +797,7 @@ index 0000000..5360806
 +# End:
 diff --git a/configure.ac b/configure.ac
 new file mode 100644
-index 0000000..ba23c32
+index 0000000..4297345
 --- /dev/null
 +++ b/configure.ac
 @@ -0,0 +1,92 @@
@@ -888,9 +890,16 @@ index 0000000..ba23c32
 +fi
 +
 +AX_CHECK_LIBMOONSHOT
-+AC_CONFIG_FILES([Makefile mech_eap/Makefile
++AC_CONFIG_FILES([Makefile libeap/Makefile mech_eap/Makefile
 +			  mech_eap.spec])
 +AC_OUTPUT
+diff --git a/libeap b/libeap
+new file mode 160000
+index 0000000..3c68005
+--- /dev/null
++++ b/libeap
+@@ -0,0 +1 @@
++Subproject commit 3c6800594dbfcba5d36cfa5556288eae999f83ba
 diff --git a/m4/minuso.m4 b/m4/minuso.m4
 new file mode 100644
 index 0000000..d8b1620

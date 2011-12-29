@@ -24,7 +24,7 @@
         <dependencies>
             <dep package="moonshot-ui"/>
             <dep package="cyrus-sasl"/> 
-<!--            <dep package="moonshot"/> -->
+            <dep package="moonshot"/> 
         </dependencies>
     </metamodule>
 

@@ -1,3 +1,23 @@
+### Building Mac OS Installer using jhbuild
+
+## Preparation
+Install jhbuild, which Creates working folder ~/gtk
+
+Need Kerberos installed in ~/gtk/inst - in the Krb5 src directory 
+$ export CFLAGS="-arch i386"
+$ ./configure --prefix=/Users/pete/gtk/inst/
+$ make
+$ make install
+
+## Building the moonshot SW
+copy file moonshot/mac-client-installer/.jhbuildrc-custom to $HOME
+then
+$ jhbuild bootstrap
+
+
+
+
+
 ###Introduction
 
 This page contains notes on how to build and install the software necessary to run Moonshot clients on a computer running Max OS X 10.6 Snow Leopard and 10.7 Lion.
