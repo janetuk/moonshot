@@ -12,9 +12,6 @@
     <repository type="git" name="moonshot-ui.gitorious.git"
     href="git@gitorious.codethink.co.uk:moonshot-ui/moonshot-ui.git"/>
     
-    <repository type="git" name="cyrus-sasl.janet.git"
-    href="http://www.project-moonshot.org/git/cyrus-sasl"/>
-    
     <repository type="tarball" name="ftp.cyrus-sasl.org" default="yes"
     href="ftp://ftp.cyrusimap.org/cyrus-sasl/"/>
 
@@ -22,13 +19,14 @@
   <include href="http://git.gnome.org/browse/gtk-osx/plain/modulesets-stable/gtk-osx.modules"/>
     <metamodule id="meta-moonshot-mac-client">
         <dependencies>
-            <dep package="moonshot-ui"/>
             <dep package="cyrus-sasl"/> 
             <dep package="moonshot"/> 
+            <dep package="moonshot-ui"/>
         </dependencies>
     </metamodule>
 
-    <autotools id="moonshot-ui" makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/moonshot-ui" >
+    
+    <autotools id="moonshot-ui" makeinstallargs="install icons app-bundle">
         <branch 
             repo="moonshot.janet.git" module="moonshot-ui.git">
         </branch>
@@ -62,7 +60,7 @@
         </dependencies>
     </tarball>
 
-    
+     
     <autotools id="moonshot" autogenargs="--enable-acceptor=no --with-krb5=$PREFIX"
         makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/moonshot">
         <branch 
@@ -72,15 +70,20 @@
         <dependencies>
        </dependencies>
     </autotools>
-    
-    <autotools id="cyrus-sasl" autogenargs="--with-gss_impl=mit"
+
+    <repository type="git" name="moonshotclient.gitorious.git"
+    href="git://gitorious.org/moonshot-identity-client"/>
+
+    <autotools id="cyrus-sasl" autogenargs="--prefix $HOME/moonshot/mac-client-installer/sasl --with-gss_impl=mit"
         makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/sasl">
         <branch 
-            repo="moonshot.janet.git" module="cyrus-sasl.git">
+            repo="moonshotclient.gitorious.git" module="cyrus-sasl.git">
+            <patch file="0002-For-Mac-OS-install-the-framework-in-DESTDIR-Library-.patch" strip="1"/>
         </branch>
         <dependencies>
         </dependencies>
     </autotools>
+
 
 </moduleset>
 
