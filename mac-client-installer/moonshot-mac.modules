@@ -23,7 +23,8 @@
     </metamodule>
 
     
-    <autotools id="moonshot-ui" makeinstallargs="install  DESTDIR=$HOME/moonshot/mac-client-installer/moonshot icons app-bundle">
+    <autotools id="moonshot-ui" 
+        makeinstallargs="install icons app-bundle">
         <branch 
             repo="moonshot.janet.git" module="moonshot-ui.git">
         </branch>
