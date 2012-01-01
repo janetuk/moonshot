@@ -9,9 +9,6 @@
     <repository type="git" name="moonshot-ui.janet.git"
     href="http://www.project-moonshot.org/git/moonshot-ui.git"/>
     
-    <repository type="git" name="moonshot-ui.gitorious.git"
-    href="git@gitorious.codethink.co.uk:moonshot-ui/moonshot-ui.git"/>
-    
     <repository type="tarball" name="ftp.cyrus-sasl.org" default="yes"
     href="ftp://ftp.cyrusimap.org/cyrus-sasl/"/>
 
@@ -26,7 +23,7 @@
     </metamodule>
 
     
-    <autotools id="moonshot-ui" makeinstallargs="install icons app-bundle">
+    <autotools id="moonshot-ui" makeinstallargs="install  DESTDIR=$HOME/moonshot/mac-client-installer/moonshot icons app-bundle">
         <branch 
             repo="moonshot.janet.git" module="moonshot-ui.git">
         </branch>
@@ -60,15 +57,12 @@
         </dependencies>
     </tarball>
 
-     
     <autotools id="moonshot" autogenargs="--enable-acceptor=no --with-krb5=$PREFIX"
         makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/moonshot">
         <branch 
         repo="moonshot.janet.git" module="moonshot.git">
         <patch file="0001-Move-moonshot-files-up.patch" strip="1"/>
         </branch>
-        <dependencies>
-       </dependencies>
     </autotools>
 
     <repository type="git" name="moonshotclient.gitorious.git"
@@ -78,10 +72,7 @@
         makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/sasl">
         <branch 
             repo="moonshotclient.gitorious.git" module="cyrus-sasl.git">
-            <patch file="0002-For-Mac-OS-install-the-framework-in-DESTDIR-Library-.patch" strip="1"/>
         </branch>
-        <dependencies>
-        </dependencies>
     </autotools>
 
 

@@ -61,6 +61,12 @@ $ exit
 choose  [1] Rerun phase build
 
 
+*** Error during phase checkout of krb5: could not unpack tarball (expected krb5-1.9.2-signed.tar dir) *** [1/1]
+choose [4] Start shell
+unpack file ~/gtk/source/krb5-1.9.2.tar.gz to create directory krb5-1.9.2
+$ exit
+choose [2] Ignore error and continue to configure
+
 ### Old instructions
 
 
