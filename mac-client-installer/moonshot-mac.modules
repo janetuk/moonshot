@@ -23,7 +23,7 @@
     </metamodule>
 
     
-    <autotools id="moonshot-ui" autogenargs="--prefix $HOME/moonshot/mac-client-installer/moonshot-ui" 
+    <autotools id="moonshot-ui" autogenargs="--prefix $HOME/moonshot/mac-client-installer/moonshot-ui  --libdir $HOME/moonshot/mac-client-installer/moonshot-ui/lib" 
         makeinstallargs="install icons app-bundle">
         <branch 
             repo="moonshot.janet.git" module="moonshot-ui.git">
