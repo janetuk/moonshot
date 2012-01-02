@@ -45,7 +45,7 @@ make: *** No targets specified and no makefile found.  Stop.
 *** Error during phase build of cyrus-sasl: ########## Error running make   *** [39/41]
 choose  [4] Start shell
 
-$ ./configure --prefix $HOME/moonshot/mac-client-installer/sasl --with-gss_impl=mit
+$ ./configure --prefix=/usr/local --with-gss_impl=mit
 $ exit 
 choose [1] Rerun phase build
 *** Error during phase build of cyrus-sasl: ########## Error running make   *** [1/1]
