@@ -5,24 +5,18 @@
     
     <repository type="git" name="moonshot.janet.git"
     href="http://www.project-moonshot.org/git"/>
+	
+<!-- maybe use this if we are pulling yrus-sasl from cyrusimap.org -->
+<!--    <repository type="tarball" name="ftp.cyrus-sasl.org" default="yes" href="ftp://ftp.cyrusimap.org/cyrus-sasl/"/>-->
 
-    <repository type="git" name="moonshot-ui.janet.git"
-    href="http://www.project-moonshot.org/git/moonshot-ui.git"/>
-    
-    <repository type="tarball" name="ftp.cyrus-sasl.org" default="yes"
-    href="ftp://ftp.cyrusimap.org/cyrus-sasl/"/>
-
-<!--    <include href="gtk-osx.modules"/> -->
   <include href="http://git.gnome.org/browse/gtk-osx/plain/modulesets-stable/gtk-osx.modules"/>
     <metamodule id="meta-moonshot-mac-client">
         <dependencies>
             <dep package="cyrus-sasl"/> 
-            <dep package="moonshot"/> 
             <dep package="moonshot-ui"/>
         </dependencies>
     </metamodule>
 
-    
     <autotools id="moonshot-ui" autogenargs="--prefix $HOME/moonshot/mac-client-installer/moonshot-ui  --libdir $HOME/moonshot/mac-client-installer/moonshot-ui/lib" 
         makeinstallargs="install icons">
         <branch 
@@ -44,6 +38,7 @@
             <dep package="shared-mime-info"/>
             <dep package="meta-gtk-osx-themes"/>
             <dep package="meta-gtk-osx-core"/>
+<!--        TODO move to gtk+-3.0 -->
 <!--            <dep package="gtk+-3.0"/> -->
             <dep package="gtk-mac-integration"/>
         </dependencies>
@@ -58,24 +53,12 @@
         </dependencies>
     </tarball>
 
-    <autotools id="moonshot" autogenargs="--enable-acceptor=no --with-krb5=$PREFIX"
-        makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/moonshot">
-        <branch 
-        repo="moonshot.janet.git" module="moonshot.git">
-        <patch file="0001-Move-moonshot-files-up.patch" strip="1"/>
-        </branch>
-    </autotools>
-
-    <repository type="git" name="moonshotclient.gitorious.git"
-    href="git://gitorious.org/moonshot-identity-client"/>
-
     <autotools id="cyrus-sasl" autogenargs="--prefix $HOME/moonshot/mac-client-installer/sasl --with-gss_impl=mit"
         makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/sasl">
         <branch 
             repo="moonshotclient.gitorious.git" module="cyrus-sasl.git">
         </branch>
     </autotools>
-
 
 </moduleset>
 
