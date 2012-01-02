@@ -17,8 +17,8 @@
         </dependencies>
     </metamodule>
 
-    <autotools id="moonshot-ui" autogenargs="--prefix $HOME/moonshot/mac-client-installer/moonshot-ui  --libdir $HOME/moonshot/mac-client-installer/moonshot-ui/lib" 
-        makeinstallargs="install icons">
+    <autotools id="moonshot-ui" autogenargs="--prefix $HOME/moonshot/mac-client-installer/moonshot-ui --libdir '/Users/pete/gtk/inst/lib'" >
+ <!--       makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/moonshot-ui"-->
         <branch 
             repo="moonshot.janet.git" module="moonshot-ui.git">
         </branch>
@@ -56,7 +56,7 @@
     <autotools id="cyrus-sasl" autogenargs="--prefix $HOME/moonshot/mac-client-installer/sasl --with-gss_impl=mit"
         makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/sasl">
         <branch 
-            repo="moonshotclient.gitorious.git" module="cyrus-sasl.git">
+            repo="moonshot.janet.git" module="cyrus-sasl.git">
         </branch>
     </autotools>
 

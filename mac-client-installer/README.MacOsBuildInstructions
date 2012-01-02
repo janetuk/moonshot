@@ -12,23 +12,23 @@ $ tar jxvf gtk-mac-bundler-0.6.1.tar.gz
 $ cd gtk-mac-bundler-0.6.1
 $ make install
 
-or, to use the most recent code:
-$ git clone git://git.gnome.org/gtk-mac-bundler
-$ cd gtk-mac-bundler
-$ make install
-
 # bootstrap jhbuild
 copy file moonshot/mac-client-installer/.jhbuildrc-custom to $HOME
 then
 $ jhbuild bootstrap --ignore-system
 
 # Kerberos 
-Need MIT Kerberos 1.9.2 installed in ~/gtk/inst 
-- in the Krb5 src directory 
+Need MIT Kerberos 1.9.2 installed in ~/gtk/inst to build against - 
+in the Krb5 src directory 
 $ export CFLAGS="-arch i386"
-$ ./configure --prefix=/Users/pete/gtk/inst/
+$ ./configure --prefix=$HOME/gtk/inst/
 $ make
 $ make install
+
+and installed in moonshot/mac-client-installer/ to package up
+$ ./configure
+$ make
+$ make install DESTDIR=$HOME/moonshot/mac-client-installer/krb
 
 ## Building the moonshot SW
 $ jhbuild build  meta-moonshot-mac-client
@@ -46,8 +46,9 @@ make: *** No targets specified and no makefile found.  Stop.
 choose  [4] Start shell
 
 $ ./configure --prefix $HOME/moonshot/mac-client-installer/sasl --with-gss_impl=mit
-
 $ exit 
+choose [1] Rerun phase build
+*** Error during phase build of cyrus-sasl: ########## Error running make   *** [1/1]
 choose [1] Rerun phase build
 
 *** Error during phase configure of moonshot: ########## Error running ./autogen.sh --prefix /Users/pete/gtk/inst --libdir '/Users/pete/gtk/inst/lib' --enable-acceptor=no --with-krb5=$PREFIX/usr/local --enable-acceptor=no  *** [40/41]
