@@ -1,3 +1,9 @@
+moonshot-gss-eap (0.1+20111207-2) unstable; urgency=low
+
+  * Initialize shib resolver before opensaml
+
+ -- Sam Hartman <hartmans@debian.org>  Tue, 03 Jan 2012 15:41:40 -0500
+
 moonshot-gss-eap (0.1+20111207-1) unstable; urgency=low
 
   * New upstream version
