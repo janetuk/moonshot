@@ -128,6 +128,10 @@ opt.add_option( '--dist', action='store_true',
                 default=False, dest='dist',
                 help = 'make dist-gzip in addition to the build'
                 )
+opt.add_option('--tar-file',
+               dest='tar_file',
+               help = 'Tar up resulting distributions in given tar file',
+               default = None)
 opt.usage = "%prog [options] [packages]"
 (options, packages) = opt.parse_args()
 prefix = options.prefix
@@ -143,6 +147,8 @@ configure_opts = ['--prefix', prefix,
                   ]
 if options.configure_opts is not None: 
     configure_opts.extend(options.configure_opts)
+tar_file = options.tar_file
+if tar_file is not None: dist = True
 
 our_schroot = None
 if options.schroot is not None:
@@ -164,11 +170,12 @@ try:
     for p in all_packages:
         if p in packages: build(p)
         make_install(p)
+    if tar_file is not None:
+        with current_directory(dist_dir):
+            run_cmd(['tar', '-cf', tar_file,
+                     '.'])
 except CommandError as c:
     print "Error:" + str(c.args)
     our_schroot = None
     exit(1)
 finally: del our_schroot
-
-    
-
