@@ -1,0 +1,23 @@
+# -*- mode: python -*-
+
+_jhb = os.environ.get("JHB")
+if _jhb is None:
+    # The default setup...
+    # checkoutroot = os.path.expanduser("~/Source/gtk")
+    # prefix = "/opt/gtk"
+    pass
+elif _jhb == "FW":
+    # The framework build...
+    # checkoutroot = os.path.expanduser("~/Source/gtk-fw")
+    # prefix = "/opt/gtk-fw"
+    pass
+
+# not sure yet if this is needed
+append_autogenargs ("dbus", "--with-x")
+
+setup_sdk(target="10.6", sdk_version="10.6", architectures=["i386"])
+os.environ['MAKEFLAGS'] = '-j 4'
+module_autogenargs['moonshot'] = '--enable-acceptor=no'
+module_autogenargs['gtk+'] = '--enable-introspection=no'
+moduleset=os.environ['HOME'] + '/moonshot/mac-client-installer/moonshot-mac.modules' 
+

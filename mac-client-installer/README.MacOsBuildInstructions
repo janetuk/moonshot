@@ -1,163 +1,60 @@
-###Introduction
+### Building Mac OS Installer using jhbuild
+This document contains instructions for building the Mac OS Installer for the Moonshot GSS EAP and SASL GS2 libraries, and the Moonshot Identity Selector software.
+The jhbuild build tool is used to build software, and must be installed as described at http://developer.gnome.org/jhbuild/unstable/getting-started.html.en.
+The Gtk+ tool gtk-mac-bundler is used to make the Identity Selector Mac OS application bundle https://live.gnome.org/GTK%2B/OSX/Bundling
+The Moonshot software requires Kerberos version 1.9.2, which is more recent than the version shipped with the target versions of Mac OS X, so must be downloaded from http://web.mit.edu/kerberos/dist/krb5/1.9/ and unpacked.
+The software to be installed, the installer package and the disk image are produced by running the script build-installer.sh in this directory. 
 
-This page contains notes on how to build and install the software necessary to run Moonshot clients on a computer running Max OS X 10.6 Snow Leopard and 10.7 Lion.
+## Preparation
+++++++++++++++
+1: Install jhbuild, which Creates working folder ~/gtk
 
-It also contains instructions for creating an installer package allowing the Moonshot software to be installed on other machines running Mac OS X.
+2: Install gtk-mac-bundler as described at https://live.gnome.org/GTK%2B/OSX/Bundlingr
+Either$ cd ~
+$ wget http://ftp.gnome.org/pub/gnome/sources/gtk-mac-bundler/0.6/gtk-mac-bundler-0.6.1.tar.bz2
+$ tar jxvf gtk-mac-bundler-0.6.1.tar.gz
+$ cd gtk-mac-bundler-0.6.1
+$ make install
 
-These notes are also in the file mac-client-installer/README.MacOsBuildInstructions
+3: bootstrap jhbuild
+copy file moonshot/mac-client-installer/.jhbuildrc-custom to $HOME
+then
+$ jhbuild bootstrap --ignore-system
 
-There are three components that need to be built and installed:
+4 MIT Kerberos 1.9.2 Kerberos 
+Install in ~/gtk/inst to build against - in the Krb5 src directory 
+$ export CFLAGS="-arch i386"
+$ ./configure --prefix=$HOME/gtk/inst/
+$ make
+$ make install
 
-1: the Cyrus SASL2 library, along with the SASL GS2 Library which implements the GS2 GSS-API->SASL bridge mechanism.
+Install in moonshot/mac-client-installer/ to include in the Installer package 
+$ ./configure
+$ make
+$ make install DESTDIR=$HOME/moonshot/mac-client-installer/krb
 
-2: the Moonshot GSS EAP library, implements the EAP mechanism for use by the GSS API. This library depends on having a recent version of Kerberos. Mac OS X ships with Kerberos 5 release 1.7-prerelease which is not recent enough. So. for the installer at least, we will get and build the latest stable release (1.9.2) from [MIT](from http://web.mit.edu/kerberos/dist/index.html).
+## Building the Software, Installer Package and Disk Image
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+In the folder ~/moonshot/mac-client-installer, run the script build-installer.sh
+$ ./build-installer.sh
 
-3: the Moonshot Identity Selector/Manager software which... 
-ToDo: Complete this section when the client software is ported to Mac OS
+## Known issues
++++++++++++++++
+The first time the build-installer.sh script is run the following errors may be generated: 
 
+*** Error during phase build of perl-xml-parser: ########## Error running make LD_RUN_PATH= *** [6/37]
+choose  [4] Start shell
+$ git apply ~/moonshot/mac-client-installer/0001-Remove-arch-ppc-flags.patch 
+$ make
+$ exit 
+choose [2] Ignore error and continue
 
-###Getting the Moonshot source code 
-
-Follow the instructions at http://www.project-moonshot.org/developers/repository, cloning  the repo in $HOME
-
-Working in $HOME/moonshot/mac-client-installer
-
-###Building the Cyrus SASL2 library
-
-    $ cd $HOME/moonshot/cyrus_sasl
-    $ ./autogen.sh 
-
-You will see the following message
-
-    configure.in:14 error: possibly undefined macro: AC_DEFINE
-    If this token and others are legitimate, please use m4_pattern_allow.
-    See the Autoconf documentation
-
-    $ ./configure --with-gss_impl=mit
-    $ make
-
-To install to /usr/local in your build machine
-
-    $ sudo make install
-
-Create the link from /usr/lib/sasl2 (where the library looks for the plugins)->/usr/local/lib/sasl2 (where the plugins will be installed)
-
-    $ cd sasl/usr/lib
-    $ ln -fs   ../local/lib/sasl2 
-
-Or, if you are making the installer
-
-    $ make install DESTDIR=$HOME/moonshot/mac-client-installer/sasl
-
-Create the link from /usr/lib/sasl2 (where the library looks for the plugins)->/usr/local/lib/sasl2 (where the plugins will be installed)
-
-    $ mkdir sasl/usr/lib
-    $ cd sasl/usr/lib
-    $ ln -fs   ../local/lib/sasl2 
-    $ cd ../../..
-    $ cd ~/installerbuild
-
-The files and directories that are installed are as listed in README.saslInstalledFiles
-
-###Building the downloaded Kerberos
-
-Unpack the file to $HOME/krbbuild
-
-    $ cd $HOME/krbbuild/krb5-1.9.2-signed/krb5-1.9.2/src
-    $ ./configure
-    $ make
-
-To install to /usr/local in your build machine
-
-    $ sudo make install
-
-Or, if you are making the installer
-    $ make install DESTDIR=$HOME/moonshot/mac-client-installer/krb
-
-###Building the Moonshot GSS EAP library
-
-    $ cd $HOME/moonshot/moonshot
-    $ ./autogen.sh
-    $ ./configure --enable-acceptor=no 
-
-You will see the following warnings
-
-    configure: WARNING:
-    ----------------------------------------------------------------------
-    Cannot find OpenSAML libraries, building without OpenSAML support.
-    Please install OpenSAML or specify installation directory with
-    --with-opensaml=(dir).
-    ----------------------------------------------------------------------
-
-    configure: WARNING:
-    ----------------------------------------------------------------------
-    Cannot find Shibboleth resolver libraries, building without
-    Shibboleth support.
-    Please install Shibboleth or specify installation directory with
-      --with-shibresolver=(dir).
-    ----------------------------------------------------------------------
-
-    $ make
-    $ cd mech_eap
-    $ sudo make install
-    $ libtool --finish /usr/local/lib/gss
-
-Or, if you are making the installer
-
-    $ ./configure --enable-acceptor=no --with-krb5=$HOME/moonshot/mac-client-installer/krb/usr/local
-    $ make
-
-We only need to install the mech_eap library
-
-    $ cd mech_eap
-    $ make install DESTDIR=$HOME/moonshot/mac-client-installer/krb
-
-The files and directories that are installed are as listed in README.KrbInstalledFiles
-
-###Building the Moonshot Identity Selector/Manager software
-ToDo: Complete this section when the client software is ported to Mac OS
-
-###Make the install package
-Ideally we would divide the installer into sub-packages (sasl and krb) within a single meta package. However this seems to be possible only from the packagemaker GUI: there are a number of problems with doing this from the packagemaker command line. We are therefore building a single package, with sasl and krb as choice items within the package.
-
-Ensure the permissions are correct for the files to be installed
-
-    $ sudo chown -R root:admin krb sasl
-    $ sudo chmod -R g+w krb sasl
-
-Build the package
-
-    $ /Developer/usr/bin/packagemaker --doc Moonshot\ Client\ Software.pmdoc \
-      --version 0.1 --filter "/.DS_Store" --resources ./resources/ --root-volume-only\
-      --domain system --verbose --no-relocate -l "/" --target 10.5 \
-      --id ja.net.moonshotClientSoftware  --out Moonshot\ Client\ Software.pkg
-
-Instructions in DevWiki at http://www.project-moonshot.org/devwiki//building_client_software_for_mac_os
-
-###Making the Disk Image
-Create and mount the image - 2MB will be enough for now
-
-    $ hdiutil create -size 2m -fs HFS+ -volname "Moonshot Client Software" temp.dmg
-    $ hdiutil attach temp.dmg
-
-Copy the package and the READMEs
-    $ cp Moonshot\ Client\ Software.pkg /Volumes/Moonshot\ Client\ Software/
-    $ cp resources/*  /Volumes/Moonshot\ Client\ Software/
-
-Get rid of hidden files and folders that we don't need
-
-    $ sudo rm -rf /Volumes/Moonshot\ Client\ Software/.fseventsd/
-    $ sudo rm -rf /Volumes/Moonshot\ Client\ Software/.Trashes/
-    $ sudo find /Volumes/Moonshot\ Client\ Software -name '.*' -type f -delete
-
-Unmount the image
-
-    $ hdiutil detach /Volumes/Moonshot\ Client\ Software
-
-Convert the disk image to read-only
-
-    $ hdiutil convert temp.dmg -format UDZO -o moonshotclientsoftware.dmg
-    $ rm temp.dmg
-
-The compressed disk image containing the installer package and the READMEs is now in file *moonshotclientsoftware.dmg*
+make: *** No targets specified and no makefile found.  Stop.
+*** Error during phase build of cyrus-sasl: ########## Error running make   *** [39/41]
+choose  [4] Start shell
+$ ./configure --prefix=/usr/local --with-gss_impl=mit
+$ exit 
+choose [1] Rerun phase build
+*** Error during phase build of cyrus-sasl: ########## Error running make   *** [1/1]
+choose [1] Rerun phase build
 
