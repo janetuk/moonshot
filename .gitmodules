@@ -31,3 +31,6 @@
 [submodule "firefox"]
 	path = firefox
 	url = ../moonshot-firefox.git
+[submodule "moonshot"]
+	path = moonshot
+	url = ../mech_eap.git
