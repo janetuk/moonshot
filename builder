@@ -169,6 +169,7 @@ if dist:
 try:
     for p in all_packages:
         if p in packages: build(p)
+        if packages[-1] == p : break
         make_install(p)
     if tar_file is not None:
         with current_directory(dist_dir):
