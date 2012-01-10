@@ -26,21 +26,21 @@
             <dep package="libgee"/>
             <dep package="dbus-glib"/>
             <dep package="glib"/>
-            <dep package="gtk-doc"/>
             <dep package="libpng"/>
             <dep package="libtiff"/>
             <dep package="libjpeg"/>
-            <dep package="pango"/>
+<!--            <dep package="pango"/>
+			<dep package="gtk-doc"/>
             <dep package="atk"/>
             <dep package="gdk-pixbuf"/>
-            <dep package="gtk+"/> 
+			<dep package="gtk-mac-integration"/>
+			<dep package="meta-gtk-osx-core"/>
+            <dep package="gtk+"/> -->
             <dep package="vala"/>
             <dep package="shared-mime-info"/>
             <dep package="meta-gtk-osx-themes"/>
-            <dep package="meta-gtk-osx-core"/>
 <!--        TODO move to gtk+-3.0 -->
-<!--            <dep package="gtk+-3.0"/> -->
-            <dep package="gtk-mac-integration"/>
+           <dep package="gtk+-3.0"/>
         </dependencies>
     </autotools>
     
