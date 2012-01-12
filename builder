@@ -72,7 +72,7 @@ def build(package):
         configure_command = [
                                       './configure'] + configure_opts
         if len(schroot_command) > 0:
-            configure_command = [schroot_command , "--"] \
+            configure_command = [schroot_command.split(' '), "--"] \
                 + configure_command
         print ' '.join(configure_command)
         sys.stdout.flush()
