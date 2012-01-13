@@ -153,8 +153,9 @@ if tar_file is not None: dist = True
 our_schroot = None
 if options.schroot is not None:
     our_schroot = Schroot(options.schroot)
-    schroot_command = "schroot -r -c " + our_schroot.name + ' --'
-    root_command = schroot_command + " -u root"
+    schroot_command_base = "schroot -r -c " + our_schroot.name
+    root_command = schroot_command_base + " -u root --"
+    schroot_command = schroot_command_base + ' --'
 
 all_packages = read_packages()
 if len(packages) == 0: packages = all_packages
