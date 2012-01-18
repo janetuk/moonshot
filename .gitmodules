@@ -34,3 +34,6 @@
 [submodule "ui"]
 	path = ui
 	url = http://www.project-moonshot.org/git/moonshot-ui.git
+[submodule "moonshot"]
+	path = moonshot
+	url = ../mech_eap.git
