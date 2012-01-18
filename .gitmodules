@@ -1,39 +1,39 @@
 [submodule "mod_auth_kerb"]
 	path = mod_auth_kerb
-	url = http://www.project-moonshot.org/git/mod_auth_kerb.git
+	url = ../mod_auth_kerb.git
 [submodule "radsecproxy"]
 	path = libradsec
-	url = http://www.project-moonshot.org/git/radsecproxy.git
+	url = ../radsecproxy.git
 [submodule "shibboleth/opensaml2"]
 	path = shibboleth/opensaml2
-	url = http://www.project-moonshot.org/git/shibboleth/opensaml2.git
+	url = ../shibboleth/opensaml2.git
 [submodule "shibboleth/sp"]
 	path = shibboleth/sp
-	url = http://www.project-moonshot.org/git/shibboleth/sp.git
+	url = ../shibboleth/sp.git
 [submodule "shibboleth/xmltooling"]
 	path = shibboleth/xmltooling
-	url = http://www.project-moonshot.org/git/shibboleth/xmltooling.git
+	url = ../shibboleth/xmltooling.git
 [submodule "cyrus-sasl"]
 	path = cyrus-sasl
-	url = http://www.project-moonshot.org/git/cyrus-sasl
+	url = ../cyrus-sasl
 [submodule "shibboleth/resolver"]
 	path = shibboleth/resolver
-	url = http://www.project-moonshot.org/git/shibboleth/resolver.git
+	url = ../shibboleth/resolver.git
 [submodule "libeap"]
 	path = moonshot/libeap
-	url = http://www.project-moonshot.org/git/libeap.git
+	url = ../libeap.git
 [submodule "openssh"]
 	path = openssh
-	url = http://www.project-moonshot.org/git/openssh.git
+	url = ../openssh.git
 [submodule "jansson"]
 	path = jansson
-	url = http://www.project-moonshot.org/git/jansson.git/
+	url = ../jansson.git/
 [submodule "firefox"]
 	path = firefox
-	url = http://www.project-moonshot.org/git/moonshot-firefox.git
+	url = ../moonshot-firefox.git
 [submodule "ui"]
 	path = ui
-	url = http://www.project-moonshot.org/git/moonshot-ui.git
+	url = ../moonshot-ui.git
 [submodule "moonshot"]
 	path = moonshot
 	url = ../mech_eap.git
