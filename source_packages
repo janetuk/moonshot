@@ -7,5 +7,6 @@ shibboleth/sp
 shibboleth/resolver
 libradsec/lib
 jansson
+ui
 moonshot
 #cyrus-sasl

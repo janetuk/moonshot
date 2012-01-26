@@ -7,5 +7,6 @@ shibboleth
 shibboleth-resolver
 libradsec
 jansson
+moonshot-ui
 mech_eap
 #cyrus-sasl
