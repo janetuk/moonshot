@@ -9,29 +9,10 @@ The software to be installed, the installer package and the disk image are produ
 ++++++++++++++
 1: Install jhbuild, which Creates working folder ~/gtk
 
-2: Install gtk-mac-bundler as described at https://live.gnome.org/GTK%2B/OSX/Bundlingr
-Either$ cd ~
-$ wget http://ftp.gnome.org/pub/gnome/sources/gtk-mac-bundler/0.6/gtk-mac-bundler-0.6.1.tar.bz2
-$ tar jxvf gtk-mac-bundler-0.6.1.tar.gz
-$ cd gtk-mac-bundler-0.6.1
-$ make install
-
-3: bootstrap jhbuild
-copy file moonshot/mac-client-installer/.jhbuildrc-custom to $HOME
-then
-$ jhbuild bootstrap --ignore-system
-
-4 MIT Kerberos 1.9.2 Kerberos 
-Install in ~/gtk/inst to build against - in the Krb5 src directory 
-$ export CFLAGS="-arch i386"
-$ ./configure --prefix=$HOME/gtk/inst/
-$ make
-$ make install
-
-Install in moonshot/mac-client-installer/ to include in the Installer package 
-$ ./configure
-$ make
-$ make install DESTDIR=$HOME/moonshot/mac-client-installer/krb
+2: MIT Kerberos 1.9.2 Kerberos 
+Install in ~/gtk/inst to build against  - in the Krb5 src directory 
+jhbuild run build-krb5.sh
+Inside jhbuild shell
 
 ## Building the Software, Installer Package and Disk Image
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -42,6 +23,9 @@ $ ./build-installer.sh
 +++++++++++++++
 The first time the build-installer.sh script is run the following errors may be generated: 
 
+*** Error during phase configure of gtk-mac-bundler: ########## Error running ./configure --prefix /Users/pete/gtk/inst --libdir '/Users/pete/gtk/inst/lib'    *** 
+choose [2] Ignore error and continue
+
 *** Error during phase build of perl-xml-parser: ########## Error running make LD_RUN_PATH= *** [6/37]
 choose  [4] Start shell
 $ git apply ~/moonshot/mac-client-installer/0001-Remove-arch-ppc-flags.patch 
@@ -50,6 +34,8 @@ $ exit
 choose [2] Ignore error and continue
 
 make: *** No targets specified and no makefile found.  Stop.
+
+
 *** Error during phase build of cyrus-sasl: ########## Error running make   *** [39/41]
 choose  [4] Start shell
 $ ./configure --prefix=/usr/local --with-gss_impl=mit

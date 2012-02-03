@@ -3,62 +3,57 @@
 <?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
 <moduleset>
     
-    <repository type="git" name="moonshot.janet.git"
-    href="http://www.project-moonshot.org/git"/>
+  <repository type="git" name="moonshot.janet.git" href="http://www.project-moonshot.org/git"/>
 	
-<!-- maybe use this if we are pulling yrus-sasl from cyrusimap.org -->
-<!--    <repository type="tarball" name="ftp.cyrus-sasl.org" default="yes" href="ftp://ftp.cyrusimap.org/cyrus-sasl/"/>-->
+	<!-- maybe use this if we decide to pull cyrus-sasl from cyrusimap.org -->
+	<!-- See launchpad defect #900448 Mac build instructions refer to the in-tree cyrus-sasl -->
+	<!-- <repository type="tarball" name="ftp.cyrus-sasl.org" default="yes" href="ftp://ftp.cyrusimap.org/cyrus-sasl/"/>-->
 
-  <include href="http://git.gnome.org/browse/gtk-osx/plain/modulesets-stable/gtk-osx.modules"/>
-    <metamodule id="meta-moonshot-mac-client">
-        <dependencies>
-            <dep package="cyrus-sasl"/> 
-            <dep package="moonshot-ui"/>
-        </dependencies>
-    </metamodule>
-
-    <autotools id="moonshot-ui" autogenargs="--prefix $HOME/moonshot/mac-client-installer/moonshot-ui --libdir $HOME/moonshot/mac-client-installer/moonshot-ui/lib" >
+	<include href="http://git.gnome.org/browse/gtk-osx/plain/modulesets-stable/gtk-osx.modules"/>
+	<autotools id="moonshot-ui">
  <!--       makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/moonshot-ui"-->
-        <branch 
-            repo="moonshot.janet.git" module="moonshot-ui.git">
-        </branch>
-        <dependencies>
-            <dep package="libgee"/>
-            <dep package="dbus-glib"/>
-            <dep package="glib"/>
-            <dep package="gtk-doc"/>
-            <dep package="libpng"/>
-            <dep package="libtiff"/>
-            <dep package="libjpeg"/>
-            <dep package="pango"/>
-            <dep package="atk"/>
-            <dep package="gdk-pixbuf"/>
-            <dep package="gtk+"/> 
-            <dep package="vala"/>
-            <dep package="shared-mime-info"/>
-            <dep package="meta-gtk-osx-themes"/>
-            <dep package="meta-gtk-osx-core"/>
-<!--        TODO move to gtk+-3.0 -->
-<!--            <dep package="gtk+-3.0"/> -->
-            <dep package="gtk-mac-integration"/>
-        </dependencies>
-    </autotools>
-    
-    <tarball id="libgee" version="0.6.0">
-        <source href="http://download.gnome.org/sources/libgee/0.6/libgee-0.6.0.tar.bz2"
-        hash="sha256:e586678d0a88637abeaaf850b62231000772e79ea6d9c4b45dc3cea99f778a7a"
-        md5sum="4eb513b23ab6ea78884989518a4acf6f" size="477609"/>
-        <dependencies>
-            <dep package="glib"/>
-        </dependencies>
-    </tarball>
+    <branch repo="moonshot.janet.git" module="moonshot-ui.git"></branch>
+      <dependencies>
+        <dep package="libgee"/>
+        <dep package="dbus-glib"/>
+        <dep package="libpng"/>
+        <dep package="libtiff"/>
+        <dep package="libjpeg"/>
+        <dep package="gtk-doc"/>
+        <dep package="gtk+"/> 
+        <dep package="vala_custom"/>
+        <dep package="meta-gtk-osx-themes"/>
+        <dep package="meta-gtk-osx-core"/>
+        <dep package="gtk-mac-integration"/>
+        <dep package="gtk-mac-bundler"/>
+      </dependencies>
+  </autotools>
 
-    <autotools id="cyrus-sasl" autogenargs="--prefix / --with-gss_impl=mit  --libdir /usr/local"
-        makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/sasl">
-        <branch 
-            repo="moonshot.janet.git" module="cyrus-sasl.git">
-        </branch>
-    </autotools>
+<!-- We need to use Vala 0.12.0 as it is the latest which supports dbus-glib -->  
+  <tarball id="vala_custom" version="0.12.0">
+    <source href="http://ftp.acc.umu.se/pub/GNOME/sources/vala/0.12/vala-0.12.1.tar.bz2"/>
+    <dependencies>
+      <dep package="glib"/>
+    </dependencies>
+  </tarball>
+   
+ <tarball id="libgee" version="0.6.4">
+    <source href="http://ftp.gnome.org/pub/GNOME/sources/libgee/0.6/libgee-0.6.4.tar.xz"/>
+    <dependencies>
+      <dep package="glib"/>
+    </dependencies>
+  </tarball>
+ 
+  <tarball id="gtk-mac-bundler" version="0.6.1" skip-autogen="true" >
+    <source href="http://ftp.gnome.org/pub/gnome/sources/gtk-mac-bundler/0.6/gtk-mac-bundler-0.6.1.tar.xz"/>
+    <dependencies>
+    </dependencies>
+  </tarball>
+
+  <autotools id="cyrus-sasl" autogenargs="--prefix / --with-gss_impl=mit  --libdir /usr/local"
+    makeinstallargs="install DESTDIR=$HOME/moonshot/mac-client-installer/sasl">
+    <branch repo="moonshot.janet.git" module="cyrus-sasl.git"></branch>
+  </autotools>
 
 </moduleset>
 
