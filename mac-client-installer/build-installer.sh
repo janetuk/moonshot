@@ -49,16 +49,6 @@ cd ~/moonshot/mac-client-installer
 pwd
 echo "Done"
 
-#
-# ToDo: Remove these lines when the Bug is fixed and the files referenced in the module
-#       sets can be downloaded succesfully
-echo "    *  Prepare to build moonshot-ui using jhbuild
-echo "    *  We need to get the sources for the tango modules as the versions on the freedesktop.org download page are broken
-echo "    *  see https://bugs.freedesktop.org/show_bug.cgi?id=45526
-curl  -L http://pkgs.fedoraproject.org/repo/pkgs/tango-icon-theme/tango-icon-theme-0.8.90.tar.gz/0795895d2f20eddcbd2bffe94ed431a6/tango-icon-theme-0.8.90.tar.gz -o ~/gtk/source/pkgs/tango-icon-theme-0.8.90.tar.gz
-curl  -L http://pkgs.fedoraproject.org/repo/pkgs/icon-naming-utils/icon-naming-utils-0.8.90.tar.gz/2c5c7a418e5eb3268f65e21993277fba/icon-naming-utils-0.8.90.tar.gz -o ~/gtk/source/pkgs/icon-naming-utils-0.8.90.tar.gz
-curl  -L http://pkgs.fedoraproject.org/repo/pkgs/tango-icon-theme-extras/tango-icon-theme-extras-0.1.0.tar.gz/caaceaec7b61f1cbda0db9842f9db281/tango-icon-theme-extras-0.1.0.tar.gz -o ~/gtk/source/pkgs/tango-icon-theme-extras-0.1.0.tar.gz 
-
 echo "    *  The first time this script is run the following errors may be generated: "
 echo "    *  *** Error during phase configure of gtk-mac-bundler: ########## Error running ./configure --prefix /Users/pete/gtk/inst --libdir '/Users/pete/gtk/inst/lib'    *** "
 echo "    *  choose [2] Ignore error and continue"
