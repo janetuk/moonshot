@@ -100,10 +100,7 @@ def gen_package_files() :
     # encoding apt's ideas about what characters to escape.
     script = '''#!/bin/sh
     set -e
-    echo deb file:{build_place} ./ >>/etc/apt/sources.list
-    apt-get update
-    touch $(ls /var/lib/apt/lists/_*Packages \
-        |sed -e s:Packages\$:Release.gpg:)
+    sudo -u root /usr/local/sbin/add-source {build_place}
     '''.format (
         build_place = build_place
         )
