@@ -37,3 +37,6 @@
 [submodule "moonshot"]
 	path = moonshot
 	url = ../mech_eap.git
+[submodule "trust_router"]
+	path = trust_router
+	url = ../trust_router.git

@@ -9,3 +9,4 @@ libradsec/lib
 ui
 moonshot
 openssh
+trust_router
