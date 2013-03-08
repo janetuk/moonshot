@@ -10,3 +10,4 @@ ui
 moonshot
 openssh
 trust_router
+freeradius-server
