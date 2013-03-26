@@ -40,3 +40,6 @@
 [submodule "trust_router"]
 	path = trust_router
 	url = ../trust_router.git
+[submodule "freeradius-server"]
+	path = freeradius-server
+	url = ../freeradius.git
