@@ -80,8 +80,10 @@ def build(package):
         if dist:
             try: os.mkdir('doc/api')
             except: pass
-            run_cmd(root_command +' make dist-gzip', shell=True)
-            run_cmd('cp *.tar.gz ' +dist_dir, shell=True)
+            #Currently freeradius's make dist is broken
+            if not package == "freeradius-server":
+                run_cmd(root_command +' make dist-gzip', shell=True)
+                run_cmd('cp *.tar.gz ' +dist_dir, shell=True)
         run_cmd(schroot_command + ' make -j3', shell=True)
 
 def make_install(package):
