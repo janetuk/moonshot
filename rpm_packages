@@ -9,4 +9,5 @@ libradsec
 jansson
 moonshot-ui
 mech_eap
+trust_router
 #cyrus-sasl
