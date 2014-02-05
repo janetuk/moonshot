@@ -5,7 +5,7 @@ shibboleth/xmltooling
 shibboleth/opensaml2
 shibboleth/sp
 shibboleth/resolver
-libradsec/lib
+libradsec
 jansson
 ui
 moonshot
