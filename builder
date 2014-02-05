@@ -68,7 +68,8 @@ def command_output(args) :
 
 def build(package):
     with current_directory(package):
-        os.makedirs( "m4")
+        try: os.makedirs( "m4")
+        except OsError: pass
         run_cmd(('autoreconf', '-i', '-f'))
         configure_command = [
                                       './configure'] + configure_opts
