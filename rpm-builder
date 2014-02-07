@@ -15,6 +15,7 @@ from shutil import copy
 # These variables can be overridden by options. If packages is not
 # set, then it is read from the rpm_packages file
 packages = []  # Set of packages to build
+tar_file = None
 
 class CommandError(exceptions.StandardError):
     pass
@@ -72,7 +73,14 @@ def read_packages():
 # main program
 opt = OptionParser()
 opt.usage = "%prog [options] distributions_dir [packages]"
+opt.add_option('--tar-file',
+               dest='tar_file',
+               help = 'Tar up resulting packages in given tar file',
+               default = None)
 (options, args) = opt.parse_args()
+tar_file = options.tar_file
+if tar_file is not None:
+    tar_file = os.path.join(os.getcwd(), tar_file)
 if len(args) == 0:
     print "Distributions directory required"
     exit(1)
@@ -91,10 +99,18 @@ for t in packages:
 os.umask(022)
 
 try:
+    run_cmd([ 'rm' '-rf',
+              os.path.expanduser("~/rpmbuild")])
+    rum_cmd([ 'rpmdev-setuptree'])
     with current_directory(dist_dir):
         tarballs.sort (key = lambda x: package_order[trim_tarball(x)])
         for t in tarballs:
             build(t)
+    if tar_file is not None:
+        with current_directory(os.path.expanduser("~/rpmbuild")):
+            run_cmd(['tar', '-cf', tar_file,
+                     './RPMS', './SRPMS'])
+
 except CommandError as c:
     print "Error:" + str(c.args)
     exit(1)
