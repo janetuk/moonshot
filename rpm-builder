@@ -99,7 +99,7 @@ for t in packages:
 os.umask(022)
 
 try:
-    run_cmd([ 'rm' '-rf',
+    run_cmd([ 'rm', '-rf',
               os.path.expanduser("~/rpmbuild")])
     rum_cmd([ 'rpmdev-setuptree'])
     with current_directory(dist_dir):
