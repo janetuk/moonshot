@@ -101,7 +101,7 @@ os.umask(022)
 try:
     run_cmd([ 'rm', '-rf',
               os.path.expanduser("~/rpmbuild")])
-    rum_cmd([ 'rpmdev-setuptree'])
+    run_cmd([ 'rpmdev-setuptree'])
     with current_directory(dist_dir):
         tarballs.sort (key = lambda x: package_order[trim_tarball(x)])
         for t in tarballs:
