@@ -20,13 +20,53 @@ tar_file = None
 class CommandError(exceptions.StandardError):
     pass
 
-def is_tarball(name):
-    return re.match('^.*\\.tar\\.gz', name)
+# Centos 6.5 does not have collections.OrderedDict
+# This implementation provides the minimal functionality of OrderedDict that we need
+# It works here, but should not be counted on for anything else.
+class OrderedDict(dict):
 
-def trim_tarball(t):
+    def __setitem__(self,k, v):
+        if k not in self:
+            self.keylist.append(k)
+        return             super(OrderedDict,self).__setitem__(k,v)
+
+    def __init__(self, *args, **kwargs):
+        super(OrderedDict,self).__init__(*args, **kwargs)
+        self.keylist = []
+
+    def values(self):
+        return map( lambda(elt): self[elt], self.keylist)
+
+builder_by_type = {
+    '.tar.gz': lambda(t): run_cmd([ 'rpmbuild', '-ta', t]),
+    '.spec':
+    lambda(s): run_cmd(['rpmbuild', '--define', '_sourcedir '+os.getcwd(),
+                        '-ba', s]),
+    }
+
+
+def find_type(name):
+    match = re.match('^.*(\\.tar\\.gz|\\.spec)$', name)
+    if match:
+        return match.group(1)
+    else: return None
+        
+
+# The following regexp is not quite right.
+# One place is the rpm_packages file.
+# The other is the directory listing.
+# The rpm_packages file might have entries like shibboleth/xmltooling
+# Where as the distributions directory might have xmltooling-1.5.tar.gz
+# Two requirements for correct operation:
+# trim_target produces unique results for everything in rpm_packages
+# trim_target correctly trims what's in the packages file to the same
+# thing it trims the tar file or spec file to.
+#
+def trim_target(t):
     match = re.match('([^/-]*/)?([^-/]+)', t)
     return match.group(2)
 
+    
 @contextmanager
 def current_directory(dir):
     "Change the current directory as a context manager; when the context exits, return."
@@ -50,7 +90,7 @@ def command_output(args) :
     return output.strip()
 
 def build(package):
-    run_cmd(['rpmbuild', '-ta', package])
+    return builder_by_type[find_type(package)](package)
 
 
 
@@ -86,14 +126,20 @@ if len(args) == 0:
     exit(1)
 dist_dir = args[0]
 packages = args[1:]
-
 if len(packages) == 0: packages = read_packages()
-package_order = {}
-count = 0
-tarballs = filter(is_tarball, os.listdir(dist_dir))
+package_order = OrderedDict()
 for t in packages:
-    package_order[trim_tarball(t)] = count
-    count += 1
+    package_order[trim_target(t)] = None
+
+for t in os.listdir(dist_dir):
+    target_type = find_type(t)
+    if target_type is None: continue
+    trimmed = trim_target(t)
+    if target_type == ".spec":
+        package_order[trimmed] = t
+    else:
+        if trimmed not in package_order: package_order[trimmed] = t
+
     
 
 os.umask(022)
@@ -102,9 +148,12 @@ try:
     run_cmd([ 'rm', '-rf',
               os.path.expanduser("~/rpmbuild")])
     run_cmd([ 'rpmdev-setuptree'])
+    for f in os.listdir("rpm-sources"):
+        copy("rpm-sources/" + f, dist_dir)
+
     with current_directory(dist_dir):
-        tarballs.sort (key = lambda x: package_order[trim_tarball(x)])
-        for t in tarballs:
+        for t in package_order.values():
+            if t is None: continue
             build(t)
     if tar_file is not None:
         with current_directory(os.path.expanduser("~/rpmbuild")):

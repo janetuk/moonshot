@@ -70,7 +70,10 @@ def build(package):
     with current_directory(package):
         try: os.makedirs( "m4")
         except OSError: pass
-        run_cmd(('autoreconf', '-i', '-f'))
+        #On Centos, freeradius produces an invalid configure script
+        # They check in a configure script anyway so we don't need autoconf
+        if package != "freeradius-server":
+            run_cmd(('autoreconf', '-i', '-f'))
         configure_command = [
                                       './configure'] + configure_opts
         if len(schroot_command) > 0:
@@ -83,7 +86,10 @@ def build(package):
             try: os.mkdir('doc/api')
             except: pass
             #Currently freeradius's make dist is broken
-            if not package == "freeradius-server":
+            if package == "freeradius-server":
+                run_cmd(root_command + " git archive --prefix=freeradius-server/ HEAD |gzip -9 >freeradius-server.tar.gz", shell=True)
+                run_cmd('cp *.tar.gz freeradius-server.spec ' +dist_dir, shell=True)
+            else: #not specially handled
                 run_cmd(root_command +' make dist-gzip', shell=True)
                 run_cmd('cp *.tar.gz ' +dist_dir, shell=True)
         run_cmd(schroot_command + ' make -j3', shell=True)
