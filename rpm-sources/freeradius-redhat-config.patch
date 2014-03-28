@@ -1,0 +1,45 @@
+diff -r -u freeradius-server-3.0.0.orig/raddb/mods-available/eap freeradius-server-3.0.0/raddb/mods-available/eap
+--- freeradius-server-3.0.0.orig/raddb/mods-available/eap	2013-10-07 15:49:47.000000000 -0400
++++ freeradius-server-3.0.0/raddb/mods-available/eap	2013-11-26 17:48:56.081183431 -0500
+@@ -435,7 +435,7 @@
+ 			#
+ 			#  You should also delete all of the files
+ 			#  in the directory when the server starts.
+-	#     		tmpdir = /tmp/radiusd
++	#     		tmpdir = /var/run/radiusd/tmp
+
+ 			#  The command used to verify the client cert.
+ 			#  We recommend using the OpenSSL command-line
+@@ -449,7 +449,7 @@
+ 			#  in PEM format.  This file is automatically
+ 			#  deleted by the server when the command
+ 			#  returns.
+-	#    		client = "/path/to/openssl verify -CApath ${..ca_path} %{TLS-Client-Cert-Filename}"
++	#    		client = "/usr/bin/openssl verify -CApath ${..ca_path} %{TLS-Client-Cert-Filename}"
+ 		}
+
+ 		#
+diff -r -u freeradius-server-3.0.0.orig/raddb/radiusd.conf.in freeradius-server-3.0.0/raddb/radiusd.conf.in
+--- freeradius-server-3.0.0.orig/raddb/radiusd.conf.in	2013-10-07 15:49:47.000000000 -0400
++++ freeradius-server-3.0.0/raddb/radiusd.conf.in	2013-11-26 17:24:52.263467793 -0500
+@@ -71,8 +71,7 @@
+ cadir   = ${confdir}/certs
+ run_dir = ${localstatedir}/run/${name}
+
+-# Should likely be ${localstatedir}/lib/radiusd
+-db_dir = ${raddbdir}
++db_dir = ${localstatedir}/lib/radiusd
+
+ #
+ # libdir: Where to find the rlm_* modules.
+@@ -376,8 +375,8 @@
+ 	#  member.  This can allow for some finer-grained access
+ 	#  controls.
+ 	#
+-#	user = radius
+-#	group = radius
++	user = radiusd
++	group = radiusd
+
+ 	#  Core dumps are a bad thing.  This should only be set to
+ 	#  'yes' if you're debugging a problem with the server.

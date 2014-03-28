@@ -1,0 +1,445 @@
+From b1b895b2cdc9563398d873023c535763540722ee Mon Sep 17 00:00:00 2001
+From: Arran Cudbard-Bell <a.cudbardb@freeradius.org>
+Date: Tue, 4 Feb 2014 17:51:51 +0000
+Subject: [PATCH] Do proper checks for each individual sqlite_v2 function
+
+---
+ .../rlm_sql/drivers/rlm_sql_sqlite/config.h.in     |  13 +-
+ .../rlm_sql/drivers/rlm_sql_sqlite/configure       | 249 +++++++--------------
+ .../rlm_sql/drivers/rlm_sql_sqlite/configure.ac    |  14 +-
+ .../drivers/rlm_sql_sqlite/rlm_sql_sqlite.c        |  35 ++-
+ 4 files changed, 125 insertions(+), 186 deletions(-)
+
+diff --git a/src/modules/rlm_sql/drivers/rlm_sql_sqlite/config.h.in b/src/modules/rlm_sql/drivers/rlm_sql_sqlite/config.h.in
+index 59abf27..f8a686f 100644
+--- a/src/modules/rlm_sql/drivers/rlm_sql_sqlite/config.h.in
++++ b/src/modules/rlm_sql/drivers/rlm_sql_sqlite/config.h.in
+@@ -1,7 +1,16 @@
+ /* config.h.in.  Generated from configure.ac by autoheader.  */
+ 
+-/* Define if the SQLite library has v2 API functions */
+-#undef HAVE_SQLITE_V2_API
++/* Define to 1 if you have the `sqlite3_create_function_v2' function. */
++#undef HAVE_SQLITE3_CREATE_FUNCTION_V2
++
++/* Define to 1 if you have the `sqlite3_errstr' function. */
++#undef HAVE_SQLITE3_ERRSTR
++
++/* Define to 1 if you have the `sqlite3_open_v2' function. */
++#undef HAVE_SQLITE3_OPEN_V2
++
++/* Define to 1 if you have the `sqlite3_prepare_v2' function. */
++#undef HAVE_SQLITE3_PREPARE_V2
+ 
+ /* Define to the address where bug reports for this package should be sent. */
+ #undef PACKAGE_BUGREPORT
+diff --git a/src/modules/rlm_sql/drivers/rlm_sql_sqlite/configure b/src/modules/rlm_sql/drivers/rlm_sql_sqlite/configure
+index 8a603af..8c22bb4 100755
+--- a/src/modules/rlm_sql/drivers/rlm_sql_sqlite/configure
++++ b/src/modules/rlm_sql/drivers/rlm_sql_sqlite/configure
+@@ -1432,6 +1432,73 @@ fi
+   as_fn_set_status $ac_retval
+ 
+ } # ac_fn_c_try_link
++
++# ac_fn_c_check_func LINENO FUNC VAR
++# ----------------------------------
++# Tests whether FUNC exists, setting the cache variable VAR accordingly
++ac_fn_c_check_func ()
++{
++  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
++$as_echo_n "checking for $2... " >&6; }
++if eval \${$3+:} false; then :
++  $as_echo_n "(cached) " >&6
++else
++  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
++/* end confdefs.h.  */
++/* Define $2 to an innocuous variant, in case <limits.h> declares $2.
++   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
++#define $2 innocuous_$2
++
++/* System header to define __stub macros and hopefully few prototypes,
++    which can conflict with char $2 (); below.
++    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
++    <limits.h> exists even on freestanding compilers.  */
++
++#ifdef __STDC__
++# include <limits.h>
++#else
++# include <assert.h>
++#endif
++
++#undef $2
++
++/* Override any GCC internal prototype to avoid an error.
++   Use char because int might match the return type of a GCC
++   builtin and then its argument prototype would still apply.  */
++#ifdef __cplusplus
++extern "C"
++#endif
++char $2 ();
++/* The GNU C library defines this for functions which it implements
++    to always fail with ENOSYS.  Some functions are actually named
++    something starting with __ and the normal name is an alias.  */
++#if defined __stub_$2 || defined __stub___$2
++choke me
++#endif
++
++int
++main ()
++{
++return $2 ();
++  ;
++  return 0;
++}
++_ACEOF
++if ac_fn_c_try_link "$LINENO"; then :
++  eval "$3=yes"
++else
++  eval "$3=no"
++fi
++rm -f core conftest.err conftest.$ac_objext \
++    conftest$ac_exeext conftest.$ac_ext
++fi
++eval ac_res=\$$3
++	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
++$as_echo "$ac_res" >&6; }
++  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
++
++} # ac_fn_c_check_func
+ cat >config.log <<_ACEOF
+ This file contains any messages produced by compilers while
+ running configure, to aid debugging if configure makes a mistake.
+@@ -2804,184 +2871,30 @@ if test "x$smart_lib" != "x"; then
+   SMART_LIBS="$smart_lib $SMART_LIBS"
+ fi
+ 
++        LDFLAGS="$SMART_LIBS"
+     if test "x$ac_cv_lib_sqlite3_sqlite3_open" != "xyes"
+     then
+         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Sqlite libraries not found. Use --with-sqlite-lib-dir=<path>." >&5
+ $as_echo "$as_me: WARNING: Sqlite libraries not found. Use --with-sqlite-lib-dir=<path>." >&2;}
+         fail="$fail libsqlite3"
+     else
+-
+-
+-sm_lib_safe=`echo "sqlite3" | sed 'y%./+-%__p_%'`
+-sm_func_safe=`echo "sqlite3_open_v2" | sed 'y%./+-%__p_%'`
+-
+-old_LIBS="$LIBS"
+-smart_lib=
+-smart_lib_dir=
+-
+-if test "x$smart_try_dir" != "x"; then
+-  for try in $smart_try_dir; do
+-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for sqlite3_open_v2 in -lsqlite3 in $try" >&5
+-$as_echo_n "checking for sqlite3_open_v2 in -lsqlite3 in $try... " >&6; }
+-    LIBS="-L$try -lsqlite3 $old_LIBS -Wl,-rpath,$try"
+-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-extern char sqlite3_open_v2();
+-int
+-main ()
+-{
+-sqlite3_open_v2()
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-if ac_fn_c_try_link "$LINENO"; then :
+-
+-		 smart_lib="-L$try -lsqlite3 -Wl,-rpath,$try"
+-		 { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+-$as_echo "yes" >&6; }
+-		 break
+-
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+-$as_echo "no" >&6; }
+-fi
+-rm -f core conftest.err conftest.$ac_objext \
+-    conftest$ac_exeext conftest.$ac_ext
+-  done
+-  LIBS="$old_LIBS"
+-fi
+-
+-if test "x$smart_lib" = "x"; then
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for sqlite3_open_v2 in -lsqlite3" >&5
+-$as_echo_n "checking for sqlite3_open_v2 in -lsqlite3... " >&6; }
+-  LIBS="-lsqlite3 $old_LIBS"
+-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-extern char sqlite3_open_v2();
+-int
+-main ()
+-{
+-sqlite3_open_v2()
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-if ac_fn_c_try_link "$LINENO"; then :
+-
+-	        smart_lib="-lsqlite3"
+-	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+-$as_echo "yes" >&6; }
+-
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+-$as_echo "no" >&6; }
+-fi
+-rm -f core conftest.err conftest.$ac_objext \
+-    conftest$ac_exeext conftest.$ac_ext
+-  LIBS="$old_LIBS"
+-fi
+-
+-if test "x$smart_lib" = "x"; then
+-
+-
+-if test "x$LOCATE" != "x"; then
+-        DIRS=
+-  file=libsqlite3${libltdl_cv_shlibext}
+-
+-  for x in `${LOCATE} $file 2>/dev/null`; do
+-                                        base=`echo $x | sed "s%/${file}%%"`
+-    if test "x$x" = "x$base"; then
+-      continue;
+-    fi
+-
+-    dir=`${DIRNAME} $x 2>/dev/null`
+-                exclude=`echo ${dir} | ${GREP} /home`
+-    if test "x$exclude" != "x"; then
+-      continue
+-    fi
+-
+-                    already=`echo \$smart_lib_dir ${DIRS} | ${GREP} ${dir}`
+-    if test "x$already" = "x"; then
+-      DIRS="$DIRS $dir"
+-    fi
+-  done
+-fi
+-
+-eval "smart_lib_dir=\"\$smart_lib_dir $DIRS\""
+-
+-
+-
+-if test "x$LOCATE" != "x"; then
+-        DIRS=
+-  file=libsqlite3.a
+-
+-  for x in `${LOCATE} $file 2>/dev/null`; do
+-                                        base=`echo $x | sed "s%/${file}%%"`
+-    if test "x$x" = "x$base"; then
+-      continue;
+-    fi
+-
+-    dir=`${DIRNAME} $x 2>/dev/null`
+-                exclude=`echo ${dir} | ${GREP} /home`
+-    if test "x$exclude" != "x"; then
+-      continue
+-    fi
+-
+-                    already=`echo \$smart_lib_dir ${DIRS} | ${GREP} ${dir}`
+-    if test "x$already" = "x"; then
+-      DIRS="$DIRS $dir"
+-    fi
+-  done
+-fi
+-
+-eval "smart_lib_dir=\"\$smart_lib_dir $DIRS\""
+-
+-
+-  for try in $smart_lib_dir /usr/local/lib /opt/lib; do
+-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for sqlite3_open_v2 in -lsqlite3 in $try" >&5
+-$as_echo_n "checking for sqlite3_open_v2 in -lsqlite3 in $try... " >&6; }
+-    LIBS="-L$try -lsqlite3 $old_LIBS -Wl,-rpath,$try"
+-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-extern char sqlite3_open_v2();
+-int
+-main ()
+-{
+-sqlite3_open_v2()
+-  ;
+-  return 0;
+-}
++    	    	for ac_func in \
++		sqlite3_prepare_v2 \
++		sqlite3_open_v2 \
++		sqlite3_create_function_v2 \
++		sqlite3_errstr \
++
++do :
++  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
++ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
++if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
++  cat >>confdefs.h <<_ACEOF
++#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+ _ACEOF
+-if ac_fn_c_try_link "$LINENO"; then :
+ 
+-		  smart_lib="-L$try -lsqlite3 -Wl,-rpath,$try"
+-		  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+-$as_echo "yes" >&6; }
+-		  break
+-
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+-$as_echo "no" >&6; }
+-fi
+-rm -f core conftest.err conftest.$ac_objext \
+-    conftest$ac_exeext conftest.$ac_ext
+-  done
+-  LIBS="$old_LIBS"
+ fi
++done
+ 
+-if test "x$smart_lib" != "x"; then
+-  eval "ac_cv_lib_${sm_lib_safe}_${sm_func_safe}=yes"
+-  LIBS="$smart_lib $old_LIBS"
+-  SMART_LIBS="$smart_lib $SMART_LIBS"
+-fi
+-
+-        if test "x$ac_cv_lib_sqlite3_sqlite3_open_v2" == "xyes"
+-	then
+-
+-$as_echo "#define HAVE_SQLITE_V2_API 1" >>confdefs.h
+-
+-        fi
+     fi
+ 
+ 
+diff --git a/src/modules/rlm_sql/drivers/rlm_sql_sqlite/configure.ac b/src/modules/rlm_sql/drivers/rlm_sql_sqlite/configure.ac
+index 94ab603..601214a 100644
+--- a/src/modules/rlm_sql/drivers/rlm_sql_sqlite/configure.ac
++++ b/src/modules/rlm_sql/drivers/rlm_sql_sqlite/configure.ac
+@@ -73,16 +73,20 @@ if test x$with_[]modname != xno; then
+     dnl try to link to libsqlite3
+     smart_try_dir="$sqlite_lib_dir"
+     FR_SMART_CHECK_LIB(sqlite3, sqlite3_open)
++    dnl # Ensure we use the library we just found the rest of the checks
++    LDFLAGS="$SMART_LIBS"
+     if test "x$ac_cv_lib_sqlite3_sqlite3_open" != "xyes"
+     then
+         AC_MSG_WARN([Sqlite libraries not found. Use --with-sqlite-lib-dir=<path>.])
+         fail="$fail libsqlite3"
+     else
+-        FR_SMART_CHECK_LIB(sqlite3, sqlite3_open_v2)
+-        if test "x$ac_cv_lib_sqlite3_sqlite3_open_v2" == "xyes"
+-	then
+-            AC_DEFINE(HAVE_SQLITE_V2_API, [1], [Define if the SQLite library has v2 API functions])   
+-        fi
++    	dnl # Add any v2 variants here
++    	AC_CHECK_FUNCS(\
++		sqlite3_prepare_v2 \
++		sqlite3_open_v2 \
++		sqlite3_create_function_v2 \
++		sqlite3_errstr \
++    	)
+     fi
+ 
+     dnl ############################################################
+diff --git a/src/modules/rlm_sql/drivers/rlm_sql_sqlite/rlm_sql_sqlite.c b/src/modules/rlm_sql/drivers/rlm_sql_sqlite/rlm_sql_sqlite.c
+index ba516e0..15dc737 100644
+--- a/src/modules/rlm_sql/drivers/rlm_sql_sqlite/rlm_sql_sqlite.c
++++ b/src/modules/rlm_sql/drivers/rlm_sql_sqlite/rlm_sql_sqlite.c
+@@ -94,7 +94,7 @@ static int sql_check_error(sqlite3 *db)
+ 	}
+ }
+ 
+-#ifdef HAVE_SQLITE_V2_API
++#ifdef HAVE_SQLITE3_OPEN_V2
+ static int sql_loadfile(TALLOC_CTX *ctx, sqlite3 *db, char const *filename)
+ {
+ 	ssize_t len;
+@@ -196,7 +196,11 @@ static int sql_loadfile(TALLOC_CTX *ctx, sqlite3 *db, char const *filename)
+ 
+ 		*q = '\0';
+ 
+-		(void) sqlite3_prepare_v2(db, s, len, &statement, &z_tail);
++#ifdef HAVE_SQLITE3_PREPARE_V2
++		(void) sqlite3_prepare_v2(db, s, len, &statement, &z_tail);
++#else
++		(void) sqlite3_prepare(db, s, len, &>statement, &z_tail);
++#endif
+ 		if (sql_check_error(db)) {
+ 			talloc_free(buffer);
+ 			return -1;
+@@ -249,7 +253,7 @@ static int mod_instantiate(CONF_SECTION *conf, rlm_sql_config_t *config)
+ 	}
+ 
+ 	if (driver->bootstrap && !exists) {
+-#ifdef HAVE_SQLITE_V2_API
++#ifdef HAVE_SQLITE3_OPEN_V2
+ 		int status;
+ 		int ret;
+ 		char *p;
+@@ -280,8 +284,13 @@ static int mod_instantiate(CONF_SECTION *conf, rlm_sql_config_t *config)
+ 
+ 		status = sqlite3_open_v2(driver->filename, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+ 		if (!db) {
+-			ERROR("rlm_sql_sqlite: Failed creating opening/creating SQLite database, error "
+-			       "code (%u)", status);
++#ifdef HAVE_SQLITE3_ERRSTR
++			ERROR("rlm_sql_sqlite: Failed creating opening/creating SQLite database: %s",
++			      sqlite3_errstr(status));
++#else
++			ERROR("rlm_sql_sqlite: Failed creating opening/creating SQLite database, got code (%i)",
++			      status);
++#endif
+ 
+ 			goto unlink;
+ 		}
+@@ -359,14 +368,18 @@ static sql_rcode_t sql_socket_init(rlm_sql_handle_t *handle, rlm_sql_config_t *c
+ 
+ 	INFO("rlm_sql_sqlite: Opening SQLite database \"%s\"", driver->filename);
+ 
+-#ifdef HAVE_SQLITE_V2_API
++#ifdef HAVE_SQLITE3_OPEN_V2
+ 	status = sqlite3_open_v2(driver->filename, &(conn->db), SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX, NULL);
+ #else
+ 	status = sqlite3_open(driver->filename, &(conn->db));
+ #endif
+ 	if (!conn->db) {
+-		ERROR("rlm_sql_sqlite: Failed creating opening/creating SQLite database error code (%u)",
+-		       status);
++#ifdef HAVE_SQLITE3_ERRSTR
++		ERROR("rlm_sql_sqlite: Failed creating opening/creating SQLite: %s", sqlite3_errstr(status));
++#else
++		ERROR("rlm_sql_sqlite: Failed creating opening/creating SQLite database error code (%i)",
++		      status);
++#endif
+ 
+ 		return -1;
+ 	}
+@@ -384,7 +397,7 @@ static sql_rcode_t sql_socket_init(rlm_sql_handle_t *handle, rlm_sql_config_t *c
+ 		return -1;
+ 	}
+ 
+-#ifdef HAVE_SQLITE_V2_API
++#ifdef HAVE_SQLITE3_CREATE_FUNCTION_V2
+ 	status = sqlite3_create_function_v2(conn->db, "GREATEST", -1, SQLITE_ANY, NULL,
+ 					    _sql_greatest, NULL, NULL, NULL);
+ #else
+@@ -403,7 +416,7 @@ static sql_rcode_t sql_select_query(rlm_sql_handle_t *handle, UNUSED rlm_sql_con
+ 	rlm_sql_sqlite_conn_t *conn = handle->conn;
+ 	char const *z_tail;
+ 
+-#ifdef HAVE_SQLITE_V2_API
++#ifdef HAVE_SQLITE3_PREPARE_V2
+ 	(void) sqlite3_prepare_v2(conn->db, query, strlen(query), &conn->statement, &z_tail);
+ #else
+ 	(void) sqlite3_prepare(conn->db, query, strlen(query), &conn->statement, &z_tail);
+@@ -421,7 +434,7 @@ static sql_rcode_t sql_query(rlm_sql_handle_t *handle, UNUSED rlm_sql_config_t *
+ 	rlm_sql_sqlite_conn_t *conn = handle->conn;
+ 	char const *z_tail;
+ 
+-#ifdef HAVE_SQLITE_V2_API
++#ifdef HAVE_SQLITE3_PREPARE_V2
+ 	status = sqlite3_prepare_v2(conn->db, query, strlen(query), &conn->statement, &z_tail);
+ #else
+ 	status = sqlite3_prepare(conn->db, query, strlen(query), &conn->statement, &z_tail);
+-- 
+1.8.5.1
+
