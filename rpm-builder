@@ -64,6 +64,7 @@ def find_type(name):
 #
 def trim_target(t):
     match = re.match('([^/-]*/)?([^-/]+)', t)
+    if match is None: return ""
     return match.group(2)
 
     

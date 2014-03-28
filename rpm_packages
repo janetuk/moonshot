@@ -11,5 +11,4 @@ moonshot-ui
 mech_eap
 trust_router
 freeradius-server
-
 #cyrus-sasl
