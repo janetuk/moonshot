@@ -139,7 +139,8 @@ for t in os.listdir(dist_dir):
     if target_type == ".spec":
         package_order[trimmed] = t
     else:
-        if trimmed not in package_order: package_order[trimmed] = t
+        # Replace None but nothing else
+        if not package_order.get(trimmed): package_order[trimmed] = t
 
     
 
