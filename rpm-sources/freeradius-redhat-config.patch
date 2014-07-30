@@ -5,8 +5,8 @@ diff -r -u freeradius-server-3.0.0.orig/raddb/mods-available/eap freeradius-serv
  			#
  			#  You should also delete all of the files
  			#  in the directory when the server starts.
--	#     		tmpdir = /tmp/radiusd
-+	#     		tmpdir = /var/run/radiusd/tmp
+-	#		tmpdir = /tmp/radiusd
++	#		tmpdir = /var/run/radiusd/tmp
 
  			#  The command used to verify the client cert.
  			#  We recommend using the OpenSSL command-line
@@ -14,8 +14,8 @@ diff -r -u freeradius-server-3.0.0.orig/raddb/mods-available/eap freeradius-serv
  			#  in PEM format.  This file is automatically
  			#  deleted by the server when the command
  			#  returns.
--	#    		client = "/path/to/openssl verify -CApath ${..ca_path} %{TLS-Client-Cert-Filename}"
-+	#    		client = "/usr/bin/openssl verify -CApath ${..ca_path} %{TLS-Client-Cert-Filename}"
+-	#		client = "/path/to/openssl verify -CApath ${..ca_path} %{TLS-Client-Cert-Filename}"
++	#		client = "/usr/bin/openssl verify -CApath ${..ca_path} %{TLS-Client-Cert-Filename}"
  		}
 
  		#
