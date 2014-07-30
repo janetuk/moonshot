@@ -153,6 +153,7 @@ configure_opts = ['--prefix', prefix,
                   '--with-system-libtool', '--with-system-libltdl',
                   '--enable-tls', '--with-gssapi='+prefix,
                   "--with-xmltooling="+prefix, 
+                  '--with-systemdsystemunitdir=' + prefix+'/lib/systemd',
                   ]
 if options.configure_opts is not None: 
     configure_opts.extend(options.configure_opts)
