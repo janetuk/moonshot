@@ -65,6 +65,7 @@ def build(package):
         print "==> Package: ", package_name
         source_format = command_output(('dpkg-source', '--print-format', '.'))
         if "native" not in source_format:
+            run_cmd('git', 'fetch', 'origin', 'pristine-tar:pristine-tar')
             run_cmd( ('pristine-tar', 'checkout', '../'+orig_tgz))
     package_path = os.path.split(package)
     with current_directory(os.path.join ('.', *package_path[0:len(package_path)-1])) :
