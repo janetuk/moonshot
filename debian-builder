@@ -60,13 +60,15 @@ def build(package):
         cl = debian.changelog.Changelog(open('debian/changelog'))
         package_name = cl.package
         package_version = re.sub('^\d+:','',str(cl.version))
-        orig_tgz = package_name+'_'+ cl.upstream_version + ".orig.tar.gz"
+        orig_tar = package_name+'_'+ cl.upstream_version + ".orig.tar"
         dsc_name = package_name+"_"+package_version + ".dsc"
         print "==> Package: ", package_name
         source_format = command_output(('dpkg-source', '--print-format', '.'))
         if "native" not in source_format:
             run_cmd( ('git', 'fetch', 'origin', 'pristine-tar:pristine-tar'))
-            run_cmd( ('pristine-tar', 'checkout', '../'+orig_tgz))
+            for file in command_output(( 'pristine-tar', 'list')).split("\n"):
+                if file.startswith(orig_tar): orig_tar = file
+            run_cmd( ('pristine-tar', 'checkout', '../'+orig_tar))
     package_path = os.path.split(package)
     with current_directory(os.path.join ('.', *package_path[0:len(package_path)-1])) :
         package_path = package_path[len(package_path)-1]
