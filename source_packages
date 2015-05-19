@@ -15,4 +15,4 @@ moonshot
 #cyrus-sasl
 trust_router
 freeradius-server
-mod_auth_kerb
+mod_auth_gssapi
