@@ -12,3 +12,4 @@ mech_eap
 trust_router
 freeradius-server
 #cyrus-sasl
+mod_auth_gssapi
