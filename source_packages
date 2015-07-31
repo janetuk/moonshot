@@ -1,7 +1,7 @@
 # This file contains a list of directories containing 
 # Debian source packages one per line.
 # Lines starting with # are comments
-shibboleth/resolver
+#shibboleth/resolver
 libradsec
 ui
 moonshot
