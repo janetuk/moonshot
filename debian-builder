@@ -92,15 +92,7 @@ def build(package):
 def gen_package_files() :
     '''Generate package files in build_place and a script
     build_place/add_source that can be used as a sbuild setup hook to
-    include the package files. Unfortunately, apt doesn't have a
-    mechanism for asserting that a package file is trusted when it is
-    local. We could generate a unique gpg key, generate signed
-    releases files and trust that key. It's easier to simply touch the
-    release.gpg in apt's lists directory, which turns out to do what
-    we need.'''
-    # Rather than substuting the release file directly, we create gpg
-    # release files for any  local package list. That's easier than
-    # encoding apt's ideas about what characters to escape.
+    include the package files.  Use the sbuild key to sign our packages'''
     script = '''#!/bin/sh
     set -e
     sudo -u root /usr/local/sbin/add-source {build_place}
@@ -114,6 +106,10 @@ def gen_package_files() :
         run_cmd(('chmod', 'a+x', 'add_source'))
         run_cmd( 'dpkg-scanpackages . >Packages',
                  shell = True)
+        run_cmd('apt-ftparchive   release . >Release', shell=True)
+        try: os.unlink('Release.gpg')
+        except OSError: pass
+        run_cmd( 'gpg -sabt -o Release.gpg --secret-keyring /var/lib/sbuild/apt-keys/sbuild-key.sec --keyring /var/lib/sbuild/apt-keys/sbuild-key.pub Release', shell=True)
 
 
 def read_packages():
