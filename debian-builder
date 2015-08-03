@@ -19,8 +19,14 @@ import debian.changelog, debian.deb822
 # These variables can be overridden by options. If packages is not
 # set, then it is read from the source_packages file
 packages = []  # Set of packages to build
-distribution = "sid"
+distribution = "unstable"
 build_place = os.path.join(os.getcwd(), 'debian_build')
+
+suffix_map = {
+    'wheezy': 'deb70',
+    'jessie': 'deb80',
+    'unstable': 'sid',
+    'sid': 'sid'}
 
 class CommandError(exceptions.StandardError):
     pass
@@ -62,6 +68,7 @@ def build(package):
         package_version = re.sub('^\d+:','',str(cl.version))
         orig_tar = package_name+'_'+ cl.upstream_version + ".orig.tar"
         dsc_name = package_name+"_"+package_version + ".dsc"
+        run_cmd(['dch', '-b', '-v' +str(cl.version)+'~'+version_suffix, '-D'+distribution, 'Autobuilt package'])
         print "==> Package: ", package_name
         source_format = command_output(('dpkg-source', '--print-format', '.'))
         if "native" not in source_format:
@@ -133,6 +140,7 @@ opt = OptionParser()
 opt.add_option('-b', '--build-place',
                dest='build_place', help="Write resulting packages to BUILD_PLACE",
                default=build_place)
+opt.add_option('--version-suffix', dest ='version_suffix')
 opt.add_option('-d', '--distribution',
                help="Set the Debian distribution to DISTRIBUTION",
                dest="distribution",
@@ -149,6 +157,8 @@ opt.usage = "%prog [options] [packages]"
 (options, packages) = opt.parse_args()
 build_place = options.build_place
 distribution = options.distribution
+version_suffix = options.version_suffix
+if not version_suffix: version_suffix = suffix_map.get(distribution, '0')
 sbuild_opts = options.sbuild_opts
 tar_file = options.tar_file
 
