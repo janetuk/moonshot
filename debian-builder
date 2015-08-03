@@ -67,7 +67,7 @@ def build(package):
         package_name = cl.package
         package_version = re.sub('^\d+:','',str(cl.version))
         orig_tar = package_name+'_'+ cl.upstream_version + ".orig.tar"
-        dsc_name = package_name+"_"+package_version + ".dsc"
+        dsc_name = package_name+"_"+package_version + '~' + version_suffix+ ".dsc"
         run_cmd(['dch', '-b', '-v' +str(cl.version)+'~'+version_suffix, '-D'+distribution, 'Autobuilt package'])
         print "==> Package: ", package_name
         source_format = command_output(('dpkg-source', '--print-format', '.'))
