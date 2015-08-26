@@ -87,6 +87,7 @@ def build(package):
             for f in dsc_files(dsc_name):
                 try: os.unlink(f)
                 except OSError: pass
+            with current_directory(package_path): run_cmd('git checkout debian/changelog', shell=True)
     with current_directory(build_place):
         sb = ['sbuild', '-n', '-d', distribution, '--setup-hook',
     build_place + '/add_source']
