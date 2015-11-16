@@ -8,3 +8,4 @@ moonshot
 openssh
 trust_router
 freeradius-server
+mod_auth_gssapi
