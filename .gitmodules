@@ -1,5 +1,5 @@
-[submodule "mod_auth_kerb"]
-	path = mod_auth_kerb
+[submodule "mod_auth_gssapi"]
+	path = mod_auth_gssapi
 	url = ../mod_auth_kerb.git
 [submodule "radsecproxy"]
 	path = libradsec
