@@ -148,7 +148,7 @@ prefix = options.prefix
 root_command = options.root_command
 dist = options.dist
 configure_opts = ['--prefix', prefix,
-                  "LDFLAGS=-L"+prefix+"/lib -Wl,-rpath="+prefix+"/lib",
+                  "LDFLAGS=-Wl,-L"+prefix+"/lib -Wl,-rpath="+prefix+"/lib",
                   'CPPFLAGS=-I '+prefix+'/include',
                   '--with-system-libtool', '--with-system-libltdl',
                   '--enable-tls', '--with-gssapi='+prefix,
