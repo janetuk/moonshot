@@ -1,13 +1,10 @@
 # This file contains a list of directories containing 
 # Debian source packages one per line.
 # Lines starting with # are comments
-# Unfortunately at the moment xmltooling is not building on Centos 6.5
-#because of issues in epel's xml-security-c-devel
-# I hope you already have a good xmltooling installed.
-#shibboleth/xmltooling
+shibboleth/xmltooling
 shibboleth/opensaml2
 shibboleth/sp
-shibboleth/resolver
+shibboleth/sp-resolver
 libradsec
 jansson
 ui

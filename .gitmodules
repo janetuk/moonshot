@@ -1,24 +1,9 @@
-[submodule "mod_auth_gssapi"]
-	path = mod_auth_gssapi
-	url = ../mod_auth_kerb.git
 [submodule "radsecproxy"]
 	path = libradsec
 	url = ../radsecproxy.git/
-[submodule "shibboleth/opensaml2"]
-	path = shibboleth/opensaml2
-	url = ../shibboleth/opensaml2.git
-[submodule "shibboleth/sp"]
-	path = shibboleth/sp
-	url = ../shibboleth/sp.git
-[submodule "shibboleth/xmltooling"]
-	path = shibboleth/xmltooling
-	url = ../shibboleth/xmltooling.git
 [submodule "cyrus-sasl"]
 	path = cyrus-sasl
 	url = ../cyrus-sasl
-[submodule "shibboleth/resolver"]
-	path = shibboleth/resolver
-	url = ../shibboleth/resolver.git
 [submodule "libeap"]
 	path = moonshot/libeap
 	url = ../libeap.git
@@ -43,18 +28,18 @@
 [submodule "freeradius-server"]
 	path = freeradius-server
 	url = ../freeradius.git
-[submodule "shibboleth/cpp-opensaml"]
-	path = shibboleth/cpp-opensaml
-	url = https://git.shibboleth.net/git/cpp-opensaml
-[submodule "shibboleth/cpp-sp"]
-	path = shibboleth/cpp-sp
-	url = https://git.shibboleth.net/git/cpp-sp
-[submodule "shibboleth/cpp-xmltooling"]
-	path = shibboleth/cpp-xmltooling
-	url = https://git.shibboleth.net/git/cpp-xmltooling
-[submodule "shibboleth/cpp-sp-resolver"]
-	path = shibboleth/cpp-sp-resolver
-	url = https://git.shibboleth.net/git/cpp-sp-resolver
-[submodule "mod_auth_gssapi-git"]
-	path = mod_auth_gssapi-git
+[submodule "mod_auth_gssapi"]
+	path = mod_auth_gssapi
 	url = https://github.com/modauthgssapi/mod_auth_gssapi.git
+[submodule "shibboleth/opensaml2"]
+	path = shibboleth/opensaml2
+	url = https://git.shibboleth.net/git/cpp-opensaml
+[submodule "shibboleth/sp"]
+	path = shibboleth/sp
+	url = https://git.shibboleth.net/git/cpp-sp
+[submodule "shibboleth/xmltooling"]
+	path = shibboleth/xmltooling
+	url = https://git.shibboleth.net/git/cpp-xmltooling
+[submodule "shibboleth/resolver"]
+	path = shibboleth/resolver
+	url = https://git.shibboleth.net/git/cpp-sp-resolver
