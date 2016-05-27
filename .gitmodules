@@ -43,3 +43,18 @@
 [submodule "freeradius-server"]
 	path = freeradius-server
 	url = ../freeradius.git
+[submodule "shibboleth/cpp-opensaml"]
+	path = shibboleth/cpp-opensaml
+	url = https://git.shibboleth.net/git/cpp-opensaml
+[submodule "shibboleth/cpp-sp"]
+	path = shibboleth/cpp-sp
+	url = https://git.shibboleth.net/git/cpp-sp
+[submodule "shibboleth/cpp-xmltooling"]
+	path = shibboleth/cpp-xmltooling
+	url = https://git.shibboleth.net/git/cpp-xmltooling
+[submodule "shibboleth/cpp-sp-resolver"]
+	path = shibboleth/cpp-sp-resolver
+	url = https://git.shibboleth.net/git/cpp-sp-resolver
+[submodule "mod_auth_gssapi-git"]
+	path = mod_auth_gssapi-git
+	url = https://github.com/modauthgssapi/mod_auth_gssapi.git
