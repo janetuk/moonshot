@@ -2,9 +2,9 @@
 # Debian source packages one per line.
 # Lines starting with # are comments
 shibboleth/xmltooling
-shibboleth/opensaml
-shibboleth
-shibboleth-resolver
+shibboleth/opensaml2
+shibboleth/sp
+shibboleth/resolver
 libradsec
 jansson
 moonshot-ui

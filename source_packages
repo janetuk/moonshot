@@ -4,7 +4,7 @@
 shibboleth/xmltooling
 shibboleth/opensaml2
 shibboleth/sp
-shibboleth/sp-resolver
+shibboleth/resolver
 libradsec
 jansson
 ui
