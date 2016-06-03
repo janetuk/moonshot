@@ -20,6 +20,10 @@ root_command = "fakeroot"
 
 schroot_command = ""
 
+bz2_packages=["opensaml2",
+              "xmltooling",
+              "shibboleth/sp"]
+
 class CommandError(exceptions.StandardError):
     pass
 
@@ -89,6 +93,9 @@ def build(package):
             if package == "freeradius-server":
                 run_cmd(root_command + " git archive --prefix=freeradius-server/ HEAD |gzip -9 >freeradius-server.tar.gz", shell=True)
                 run_cmd('cp *.tar.gz freeradius-server.spec ' +dist_dir, shell=True)
+            elif package in bz2_packages: 
+                run_cmd(root_command +' make dist-bzip2', shell=True)
+                run_cmd('cp *.tar.bz2 ' +dist_dir, shell=True)
             else: #not specially handled
                 run_cmd(root_command +' make dist-gzip', shell=True)
                 run_cmd('cp *.tar.gz ' +dist_dir, shell=True)

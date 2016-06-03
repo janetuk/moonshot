@@ -7,6 +7,7 @@ from contextlib import contextmanager
 import os, subprocess, exceptions
 import re
 import sys
+import string
 from optparse import OptionParser
 from shutil import copy
 
@@ -37,8 +38,13 @@ class OrderedDict(dict):
     def values(self):
         return map( lambda(elt): self[elt], self.keylist)
 
+    def iteritems(self):
+        for k in self.keylist:
+            yield (k, self[k])
+
 builder_by_type = {
     '.tar.gz': lambda(t): run_cmd([ 'rpmbuild', '-ta', t]),
+    '.tar.bz2': lambda(t): run_cmd([ 'rpmbuild', '-ta', t]),
     '.spec':
     lambda(s): run_cmd(['rpmbuild', '--define', '_sourcedir '+os.getcwd(),
                         '-ba', s]),
@@ -46,7 +52,7 @@ builder_by_type = {
 
 
 def find_type(name):
-    match = re.match('^.*(\\.tar\\.gz|\\.spec)$', name)
+    match = re.match('^.*(\\.tar\\.gz|\\.tar\\.bz2|\\.spec)$', name)
     if match:
         return match.group(1)
     else: return None
@@ -63,9 +69,13 @@ def find_type(name):
 # thing it trims the tar file or spec file to.
 #
 def trim_target(t):
-    match = re.match('([^/-]*/)?([^-/]+)', t)
-    if match is None: return ""
-    return match.group(2)
+    # first lose any suffix (like -1.5.tar.gz)
+    name_parts=t.split('-')
+    if name_parts[-1][0] in string.digits:
+        name_parts=name_parts[:-1]
+    name="-".join(name_parts) # in case it had dash-separated parts
+    name="-".join(name.split("/")) # replace / with -
+    return name
 
     
 @contextmanager
@@ -141,8 +151,6 @@ for t in os.listdir(dist_dir):
     else:
         # Replace None but nothing else
         if not package_order.get(trimmed): package_order[trimmed] = t
-
-    
 
 os.umask(022)
 
