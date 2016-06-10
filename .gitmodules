@@ -30,16 +30,16 @@
 	url = ../freeradius.git
 [submodule "mod_auth_gssapi"]
 	path = mod_auth_gssapi
-	url = https://github.com/modauthgssapi/mod_auth_gssapi.git
+	url = ../mod_auth_gssapi.git
 [submodule "shibboleth/opensaml2"]
 	path = shibboleth/opensaml2
-	url = https://git.shibboleth.net/git/cpp-opensaml
+	url = ../shibboleth/cpp-opensaml.git
 [submodule "shibboleth/sp"]
 	path = shibboleth/sp
-	url = https://git.shibboleth.net/git/cpp-sp
+	url = ../shibboleth/cpp-sp.git
 [submodule "shibboleth/xmltooling"]
 	path = shibboleth/xmltooling
-	url = https://git.shibboleth.net/git/cpp-xmltooling
+	url = ../shibboleth/cpp-xmltooling.git
 [submodule "shibboleth/resolver"]
 	path = shibboleth/resolver
-	url = https://git.shibboleth.net/git/cpp-sp-resolver
+	url = ../shibboleth/cpp-sp-resolver.git
