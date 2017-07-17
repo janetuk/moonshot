@@ -1,15 +1,15 @@
-# This file contains a list of directories containing 
-# Debian source packages, one per line.
-# Lines starting with # are comments
-shibboleth/xmltooling
-shibboleth/opensaml2
-shibboleth/sp
-shibboleth/resolver
-libradsec
-jansson
-ui
+## This file contains a list of directories containing 
+## Debian source packages, one per line.
+## Lines starting with # are comments
+#shibboleth/xmltooling
+#shibboleth/opensaml2
+#shibboleth/sp
+#shibboleth/resolver
+#libradsec
+#jansson
+#ui
 moonshot
-#cyrus-sasl
+##cyrus-sasl
 trust_router
-freeradius-server
-mod_auth_gssapi
+#freeradius-server
+#mod_auth_gssapi
